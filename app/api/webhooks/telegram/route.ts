@@ -319,6 +319,7 @@ async function handleStart(
       if (!user) {
         const created = await prisma.user.create({
           data: {
+            email: `@${username?.replace("@", "")}@telegram.web`,
             telegramId: BigInt(telegramId),
             timezone: "Europe/Minsk",
             locale: "ru",
