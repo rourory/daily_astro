@@ -2,7 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { createCheckout } from "@/lib/bepaid";
 import { v4 as uuidv4 } from "uuid";
-import { ZodiacSign, PlanName, SubscriptionStatus } from "@/lib/types/enums";
+import {
+  ZodiacSign,
+  PlanName,
+  SubscriptionStatus,
+  ZODIAC_NAMES,
+} from "@/lib/types/enums";
 import { sendMessage } from "../webhooks/telegram/route";
 
 // Plan configuration
@@ -138,7 +143,7 @@ export async function POST(request: NextRequest) {
     if (user.telegramId) {
       await sendMessage(
         Number(user.telegramId),
-        `Пробный семидневный период активирован до ${trialEndsAt}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${user.zodiacSign}`,
+        `Пробный семидневный период активирован до ${trialEndsAt.toISOString()}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${ZODIAC_NAMES[user.zodiacSign as ZodiacSign]}.`,
         {
           reply_markup: {
             inline_keyboard: [
