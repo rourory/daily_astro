@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ZodiacSign {
+  aries
+  taurus
+  gemini
+  cancer
+  leo
+  virgo
+  libra
+  scorpio
+  sagittarius
+  capricorn
+  aquarius
+  pisces
+}
+
+enum SubscriptionStatus {
+  trial
+  active
+  canceled
+  expired
+  grace
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum PlanName {
+  basic
+  plus
+  premium
+}
+
+model User {
+  id           String     @id @default(uuid())
+  telegramId   BigInt?    @unique @map("telegram_id")
+  email        String?
+  zodiacSign   ZodiacSign? @map("zodiac_sign")
+  birthDate    DateTime?  @map("birth_date") @db.Date
+  timezone     String     @default("Europe/Minsk")
+  locale       String     @default("ru")
+  deliveryTime String     @default("07:30:00") @map("delivery_time")
+  isPaused     Boolean    @default(false) @map("is_paused")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  subscriptions    Subscription[]
+  payments         Payment[]
+  deliveries       Delivery[]
+  partners         UserPartner[]
+  giftsSent        GiftSubscription[] @relation("GiftSender")
+
+  @@index([zodiacSign])
+  @@map("users")
+}
+
+model Plan {
+  id            String   @id @default(uuid())
+  name          PlanName @unique
+  priceBynMonth Int      @map("price_byn_month")
+  features      Json     @default("{}")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  subscriptions    Subscription[]
+  giftSubscriptions GiftSubscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id              String             @id @default(uuid())
+  userId          String             @map("user_id")
+  planId          String             @map("plan_id")
+  status          SubscriptionStatus @default(trial)
+  trialEndsAt     DateTime?          @map("trial_ends_at")
+  startAt         DateTime           @default(now()) @map("start_at")
+  renewAt         DateTime?          @map("renew_at")
+  canceledAt      DateTime?          @map("canceled_at")
+  paymentProvider String             @default("bepaid") @map("payment_provider")
+  paymentToken    String?            @map("payment_token")
+  lastPaymentId   String?            @map("last_payment_id")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     Plan      @relation(fields: [planId], references: [id])
+  payments Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([renewAt])
+  @@map("subscriptions")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  subscriptionId    String?       @map("subscription_id")
+  providerPaymentId String?       @map("provider_payment_id")
+  orderId           String        @unique @map("order_id")
+  amountByn         Int           @map("amount_byn")
+  currency          String        @default("BYN")
+  status            PaymentStatus @default(pending)
+  isRecurring       Boolean       @default(false) @map("is_recurring")
+  metadata          Json          @default("{}")
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  giftSubscription GiftSubscription?
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+model AstroEvent {
+  id          String     @id @default(uuid())
+  eventDate   DateTime   @map("event_date") @db.Date
+  planet      String
+  sign        ZodiacSign?
+  aspect      String?
+  magnitude   Float?
+  source      String?
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  @@index([eventDate])
+  @@map("astro_events")
+}
+
+model Forecast {
+  id           String     @id @default(uuid())
+  forecastDate DateTime   @map("forecast_date") @db.Date
+  zodiacSign   ZodiacSign @map("zodiac_sign")
+
+  // --- BASIC PLAN ---
+  love   String @db.Text
+  money  String @db.Text
+  mood   String @db.Text
+  advice String @db.Text
+
+  // --- PLUS PLAN ---
+  // Добавили @default(""), чтобы старые записи получили пустую строку
+  affirmation String @default("") @db.Text
+  
+  // Добавили @default("{}"), чтобы старые записи получили пустой JSON
+  compatibility Json @default("{}")
+
+  // --- PREMIUM PLAN ---
+  // Добавили @default("{}")
+  luckyMetrics Json @default("{}") @map("lucky_metrics")
+  
+  // Добавили @default("")
+  tomorrowInsight String @default("") @map("tomorrow_insight") @db.Text
+
+  // Техническое поле
+  source      Json     @default("{}")
+  generatedAt DateTime @default(now()) @map("generated_at")
+
+  deliveries Delivery[]
+
+  @@unique([forecastDate, zodiacSign])
+  @@index([forecastDate, zodiacSign])
+  @@map("forecasts")
+}
+
+model ContentTemplate {
+  id           String     @id @default(uuid())
+  zodiacSign   ZodiacSign? @map("zodiac_sign")
+  triggerType  String     @map("trigger_type")
+  triggerValue String     @map("trigger_value")
+  category     String
+  textRu       String     @map("text_ru")
+  weight       Int        @default(1)
+  isActive     Boolean    @default(true) @map("is_active")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@index([triggerType, triggerValue])
+  @@map("content_templates")
+}
+
+model Delivery {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  deliveryDate      DateTime @map("delivery_date") @db.Date
+  forecastId        String?  @map("forecast_id")
+  telegramMessageId String?  @map("telegram_message_id")
+  opened            Boolean  @default(false)
+  streakCount       Int      @default(1) @map("streak_count")
+  planSnapshot      Json     @default("{}") @map("plan_snapshot")
+  deliveredAt       DateTime? @map("delivered_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  forecast Forecast? @relation(fields: [forecastId], references: [id])
+
+  @@index([userId, deliveryDate])
+  @@map("deliveries")
+}
+
+model UserPartner {
+  id          String     @id @default(uuid())
+  userId      String     @map("user_id")
+  partnerSign ZodiacSign @map("partner_sign")
+  partnerName String?    @map("partner_name")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_partners")
+}
+
+model GiftSubscription {
+  id                  String   @id @default(uuid())
+  senderUserId        String?  @map("sender_user_id")
+  recipientTelegramId BigInt?  @map("recipient_telegram_id")
+  planId              String   @map("plan_id")
+  durationDays        Int      @default(30) @map("duration_days")
+  paymentId           String?  @unique @map("payment_id")
+  redeemed            Boolean  @default(false)
+  redeemedAt          DateTime? @map("redeemed_at")
+  code                String   @unique
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  sender  User?    @relation("GiftSender", fields: [senderUserId], references: [id])
+  plan    Plan     @relation(fields: [planId], references: [id])
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@map("gift_subscriptions")
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  level     LogLevel
+  source    String  
+  action    String  
+  message   String  
+  meta      Json?   
+  createdAt DateTime @default(now())
+
+  @@index([level])
+  @@index([source])
+  @@index([createdAt])
+}

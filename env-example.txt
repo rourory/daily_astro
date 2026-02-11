@@ -1,0 +1,28 @@
+# --- DATABASE ---
+DB_USERNAME=
+DB_PASSWORD=
+DB_NAME=
+
+# --- NEXT.JS / BACKEND ---
+DATABASE_URL=postgresql://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
+NEXT_PUBLIC_APP_URL=https://your-doamin.com
+
+# --- TELEGRAM BOT ---
+BOT_TOKEN=
+
+# --- ADMIN ---
+ADMIN_PASSWORD=
+
+# --- BEPAID PAYMENT ---
+BEPAID_SHOP_ID=your_shop_id
+BEPAID_SECRET_KEY=your_secret_key
+BEPAID_WEBHOOK_SECRET=your_webhook_secret
+
+# --- CRON ---
+CRON_SECRET=
+
+# --- PGADMIN ---
+PGADMIN_EMAIL=
+PGADMIN_PASSWORD=
+
+TELEGRAM_WEBHOOK_URL=https://you-domain.com/api/webhooks/telegram
