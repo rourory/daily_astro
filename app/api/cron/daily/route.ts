@@ -12,7 +12,7 @@ export const maxDuration = 60;
 
 const telegramWebhookUrl =
   process.env.TELEGRAM_WEBHOOK_URL ||
-  "https://dailyastro.site/api/webhooks/telegram";
+  "https://dailyastro.vercel.app/api/webhooks/telegram";
 
 export async function GET(request: Request) {
   // Verify cron secret (skip if not set for local development)

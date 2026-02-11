@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 const telegramWebhookUrl =
   process.env.TELEGRAM_WEBHOOK_URL ||
-  "https://dailyastro.site/api/webhooks/telegram";
+  "https://dailyastro.vercel.app/api/webhooks/telegram";
 
 export async function GET() {
   try {
