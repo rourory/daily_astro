@@ -339,8 +339,17 @@ async function handleStart(
 
       await sendMessage(
         chatId,
-        `<b>Добро пожаловать в Daily Astro!</b>\n\nЯ буду присылать вам персональный гороскоп каждое утро.\n\nВыберите ваш знак зодиака:`,
-        { reply_markup: ZODIAC_KEYBOARD },
+        `<b>Добро пожаловать в Daily Astro!</b>\n\nЯ буду присылать вам персональный гороскоп каждое утро после оформления подписки.\n\nПопробуйте семидневный пробный период!`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              {
+                text: "Оформить подписку",
+                url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe`,
+              },
+            ],
+          },
+        },
       );
     }
   } catch (error) {
@@ -740,9 +749,11 @@ export async function POST(request: NextRequest) {
       if (data.startsWith("zodiac_")) {
         const zodiac = data.replace("zodiac_", "");
         await handleZodiacSelection(chatId, telegramId, zodiac);
-      } else if (data === "get_forecast") {
-        await handleForecast(chatId, telegramId, username);
-      } else if (data === "settings") {
+      }
+      // else if (data === "get_forecast") {
+      //   await handleForecast(chatId, telegramId, username);
+      // }
+      else if (data === "settings") {
         await handleSettings(chatId, telegramId, username);
       } else if (data === "change_zodiac") {
         await sendMessage(chatId, "Выберите новый знак зодиака:", {
