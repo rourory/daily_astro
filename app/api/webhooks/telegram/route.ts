@@ -280,6 +280,27 @@ async function handleStart(
 
       let statusText = "";
       const sub = user.subscriptions[0];
+
+      if (!sub) {
+        await sendMessage(
+          chatId,
+          `<b>Добро пожаловать в Daily Astro!</b>\n\nЯ буду присылать вам персональный гороскоп каждое утро после оформления подписки.\n\nПопробуйте семидневный пробный период!`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "Оформить подписку",
+                    url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe`,
+                  },
+                ],
+              ],
+            },
+          },
+        );
+        return;
+      }
+
       if (sub?.status === SubscriptionStatus.active) {
         statusText = `\n\nПодписка: <b>${sub.plan.name}</b>`;
       } else if (sub?.status === SubscriptionStatus.trial) {
@@ -291,16 +312,16 @@ async function handleStart(
 
       await sendMessage(
         chatId,
-        `С возвращением! ${symbol}\n\nВаш знак: <b>${signName}</b>${statusText}\n\nИспользуйте /forecast чтобы получить прогноз на сегодня.`,
+        `С возвращением! ${symbol}\n\nВаш знак: <b>${signName}</b>.`,
         {
           reply_markup: {
             inline_keyboard: [
-              [
-                {
-                  text: "Получить прогноз на сегодня",
-                  callback_data: "get_forecast",
-                },
-              ],
+              // [
+              //   {
+              //     text: "Получить прогноз на сегодня",
+              //     callback_data: "get_forecast",
+              //   },
+              // ],
               [{ text: "Настройки", callback_data: "settings" }],
             ],
           },
@@ -343,10 +364,12 @@ async function handleStart(
         {
           reply_markup: {
             inline_keyboard: [
-              {
-                text: "Оформить подписку",
-                url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe`,
-              },
+              [
+                {
+                  text: "Оформить подписку",
+                  url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe`,
+                },
+              ],
             ],
           },
         },
@@ -581,11 +604,11 @@ async function handleZodiacSelection(
 
   await sendMessage(
     chatId,
-    `${symbol} Отлично! Ваш знак — <b>${signName}</b>\n\nТеперь вы будете получать персональные прогнозы каждое утро в 07:30.\n\nНажмите кнопку ниже, чтобы получить первый прогноз!`,
+    `${symbol} Отлично! Ваш знак — <b>${signName}</b>\n\nТеперь вы будете получать персональные прогнозы каждое утро.`,
     {
       reply_markup: {
         inline_keyboard: [
-          [{ text: "Получить прогноз", callback_data: "get_forecast" }],
+          // [{ text: "Получить прогноз", callback_data: "get_forecast" }],
           [
             {
               text: "Оформить подписку",
@@ -805,9 +828,11 @@ export async function POST(request: NextRequest) {
       // Command handlers
       if (text === "/start") {
         await handleStart(chatId, telegramId, username);
-      } else if (text === "/forecast" || text === "/horoscope") {
-        await handleForecast(chatId, telegramId, username);
-      } else if (text === "/plan" || text === "/subscription") {
+      }
+      // else if (text === "/forecast" || text === "/horoscope") {
+      //   await handleForecast(chatId, telegramId, username);
+      // }
+      else if (text === "/plan" || text === "/subscription") {
         await handlePlan(chatId, telegramId, username);
       } else if (text === "/settings") {
         await handleSettings(chatId, telegramId, username);
@@ -818,7 +843,7 @@ export async function POST(request: NextRequest) {
       } else if (text === "/help") {
         await sendMessage(
           chatId,
-          `<b>Доступные команды:</b>\n\n/start — Начать работу с ботом\n/forecast — Прогноз на сегодня\n/plan — Информация о подписке\n/settings — Настройки\n/pause — Приостановить доставку\n/cancel — Отменить подписку\n/help — Эта справка\n\nПоддержка: @dailyastro_support`,
+          `<b>Доступные команды:</b>\n\n/start — Начать работу с ботом\n/plan — Информация о подписке\n/settings — Настройки\n/pause — Приостановить доставку\n/cancel — Отменить подписку\n/help — Эта справка\n\nПоддержка: @dailyastro_support`,
         );
       } else {
         await createSystemLog({
@@ -829,10 +854,7 @@ export async function POST(request: NextRequest) {
           meta: { chatId, telegramId, textPreview: text?.slice(0, 200) },
         });
 
-        await sendMessage(
-          chatId,
-          "Используйте /forecast для получения прогноза или /help для списка команд.",
-        );
+        await sendMessage(chatId, "Используйте /help для списка команд.");
       }
     }
 
