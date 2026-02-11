@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     if (user.telegramId) {
       await sendMessage(
         Number(user.telegramId),
-        `Пробный семидневный период активирован до ${trialEndsAt.toISOString()}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${ZODIAC_NAMES[user.zodiacSign as ZodiacSign]}.`,
+        `Пробный семидневный период активирован до ${trialEndsAt.toISOString().slice(0, 9)}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${ZODIAC_NAMES[user.zodiacSign as ZodiacSign]}.`,
         {
           reply_markup: {
             inline_keyboard: [
