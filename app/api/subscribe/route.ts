@@ -135,7 +135,25 @@ export async function POST(request: NextRequest) {
         paymentProvider: "bepaid",
       },
     });
-
+    if (user.telegramId) {
+      await sendMessage(
+        Number(user.telegramId),
+        `Пробный семидневный период активирован до ${trialEndsAt}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${user.zodiacSign}`,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              // [
+              //   {
+              //     text: "Получить прогноз на сегодня",
+              //     callback_data: "get_forecast",
+              //   },
+              // ],
+              [{ text: "Настройки", callback_data: "settings" }],
+            ],
+          },
+        },
+      );
+    }
     // Try to create checkout for payment after trial
     const orderId = uuidv4();
 
@@ -163,26 +181,6 @@ export async function POST(request: NextRequest) {
           isRecurring: true,
         },
       });
-
-      if (user.telegramId) {
-        await sendMessage(
-          Number(user.telegramId),
-          `Пробный семидневный период активирован до ${trialEndsAt}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${user.zodiacSign}`,
-          {
-            reply_markup: {
-              inline_keyboard: [
-                // [
-                //   {
-                //     text: "Получить прогноз на сегодня",
-                //     callback_data: "get_forecast",
-                //   },
-                // ],
-                [{ text: "Настройки", callback_data: "settings" }],
-              ],
-            },
-          },
-        );
-      }
 
       return NextResponse.json({
         success: true,
