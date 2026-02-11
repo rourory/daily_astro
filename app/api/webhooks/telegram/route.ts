@@ -16,7 +16,7 @@ export const fetchCache = "force-no-store";
 const BOT_TOKEN = process.env.BOT_TOKEN!;
 
 // Telegram API helper
-async function sendMessage(
+export async function sendMessage(
   chatId: number,
   text: string,
   options?: { reply_markup?: object },
