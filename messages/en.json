@@ -51,145 +51,142 @@
       }
     ]
   },
-   "Bot": {
+  "Bot": {
     "welcome_title": "Welcome to Daily Astro!",
-    "welcome_text": "I will send you a personal horoscope every morning.",
-    "trial_btn": "Try for Free",
+    "welcome_text": "I'll send you a personal horoscope every morning.",
+    "trial_btn": "Try for free",
     "subscribe_btn": "Subscribe",
-    "settings_btn": "Settings ⚙️",
-    "change_zodiac_btn": "Change Sign ♈",
-    "change_lang_btn": "Language 🌐",
-    "change_tz_btn": "Timezone 🌍",
-    "change_time_btn": "Delivery Time ⏰",
+    "settings_btn": "Settings",
+    "change_zodiac_btn": "Change sign",
     "welcome_back": "Welcome back! Your sign: <b>{sign}</b>.",
     "choose_sign": "Choose your zodiac sign:",
-    "sign_selected": "Great! Your sign is <b>{sign}</b>.\nYou will now receive forecasts.",
-    "plan_active": "Plan: <b>{plan}</b>",
-    "plan_trial": "Trial until: <b>{date}</b>",
+    "sign_selected": "Great! Your sign is <b>{sign}</b>.\nNow you'll receive forecasts.",
+    "plan_active": "Subscription: <b>{plan}</b>",
+    "plan_trial": "Trial active until: <b>{date}</b>",
     "plan_expired": "Subscription expired",
-    "plan_info_header": "<b>Your Plan:</b> {current}\n\n<b>Available Plans:</b>",
-    "plan_info_body": "<b>Basic</b> — Daily Forecast\n<b>Plus</b> — Compatibility + Affirmations\n<b>Premium</b> — Key Dates + Flexible Time",
-    "cancel_sub_btn": "Cancel Subscription",
-    "settings_header": "<b>Settings</b>\n\nSign: <b>{sign}</b>\nDelivery Time: <b>{time}</b>\nStatus: <b>{status}</b>",
+    "plan_info_header": "<b>Your plan:</b> {current}\n\n<b>Available plans:</b>",
+    "plan_info_body": "<b>Basic</b> — Daily forecast\n<b>Plus</b> — Compatibility + Affirmations\n<b>Premium</b> — Important dates + Flexible time",
+    "cancel_sub_btn": "Cancel subscription",
+    "settings_header": "<b>Settings</b>\n\nSign: <b>{sign}</b>\nDelivery time: <b>{time}</b>\nStatus: <b>{status}</b>",
     "status_active": "Active ✅",
     "status_paused": "Paused ⏸️",
     "pause_btn": "Pause",
     "resume_btn": "Resume",
-    "pause_done": "Delivery paused.",
-    "resume_done": "Delivery resumed!",
-    "cancel_confirm": "Are you sure? Access remains until end of period.",
+    "pause_done": "Mailing has been paused.",
+    "resume_done": "Mailing resumed!",
+    "cancel_confirm": "Are you sure? Access remains until the end of the period.",
     "yes_cancel": "Yes, cancel",
     "no_back": "No, go back",
     "sub_canceled": "Subscription canceled. Access until {date}.",
     "no_sub": "No active subscription.",
-    "select_lang_text": "Select language:",
-    "lang_updated": "Language changed to <b>English 🇺🇸</b>",
-    "select_tz_text": "Select your timezone city:",
-    "tz_updated": "Timezone updated: <b>{zone}</b>.\nCurrent time there: {time}",
-    "select_time_text": "Select convenient delivery time:",
-    "time_updated": "Great! Forecast will be sent at <b>{time}</b>.",
-    "premium_only": "Time selection is available on <b>Premium</b> plan only.",
-    "upgrade_btn": "Upgrade Plan",
-    "help_text": "<b>Commands:</b>\n/start - Start\n/plan - Plan Info\n/settings - Settings"
+    "error_register": "Press /start first",
+    "unknown_command": "Unknown command. Use /help",
+    "help_text": "<b>Commands:</b>\n/start - Start\n/plan - Subscription\n/settings - Settings",
+    "change_time_btn": "Delivery time ⏰",
+    "select_time_text": "Choose a convenient time to receive the forecast (in your time zone):",
+    "time_updated": "Great! Forecast will now arrive at <b>{time}</b>.",
+    "premium_only": "Choosing delivery time is available only on the <b>Premium</b> plan.\n\nOn your current plan the delivery time is fixed: 07:00.",
+    "upgrade_btn": "Upgrade plan",
+    "change_lang_btn": "Language / Язык 🌐",
+    "change_tz_btn": "Time zone 🌍",
+    "select_lang_text": "Select language / Выберите язык:",
+    "lang_updated": "Language changed",
+    "select_tz_text": "Select the city for your time zone:",
+    "tz_updated": "Time zone updated: <b>{zone}</b>.\nYour current local time: {time}",
+    "trial_ended_text": "<b>Your trial period has ended!</b> 🏁\n\nWe hope the stars helped you during the week.\nTo continue receiving personalized forecasts, please subscribe.",
+    "trial_ended_btn": "Extend access 🚀",
+    "open_menu": "Open menu 📱",
+    "subscribe_stopped_recurring_payment_error": "<b>⚠️ Subscription paused</b>\n\nAuto-payment for plan <b>${sub.plan.name}</b> failed (system error).\nPlease reattach your card or contact support.",
+    "success_binding": "<b>✅ Card successfully linked!</b>\n\nYour trial is activated. Charges will occur only after it ends.",
+    "success_recurrent_payment": "<b>✅ Subscription renewed successfully!</b>\n\nThank you for staying with us. Next charge: {nextDateStr}.",
+    "payment_failed": "<b>⛔️ Subscription paused</b>\n\n`{reasonText}\n`We couldn't renew access. Please top up your balance to restore the subscription."
   },
   "ForecastPreview": {
-    "select_sign": "Select your zodiac sign",
+    "select_sign": "Select a zodiac sign",
     "sample_forecasts": {
       "aries": {
-        "love": "The stars favor romance today. Mars in your sign adds passion.",
-        "money": "A good day for financial negotiations. Your confidence will help convince partners.",
-        "mood": "Energy is overflowing — channel it into creativity or sports.",
-        "advice": "Take the first step in an important matter — now is the ideal moment."
+        "love": "Today the stars favor romance. Mars in your sign adds passion.",
+        "money": "A good day for financial negotiations. Your confidence will persuade partners.",
+        "mood": "Energy is through the roof — channel it into creativity or sport.",
+        "advice": "Take the first step in an important matter — now is the perfect moment."
       },
       "taurus": {
-        "love": "Venus makes you especially attractive. It's time to strengthen relationships.",
+        "love": "Venus makes you especially attractive. Time to strengthen relationships.",
         "money": "Stability is your trump card. Avoid risky investments.",
         "mood": "Calmness and confidence are your main allies today.",
         "advice": "Treat yourself to something nice — you deserve it."
       },
       "gemini": {
-        "love": "Communication is the key to your partner's heart. Your wit conquers all.",
-        "money": "A lucky day for short deals and negotiations.",
+        "love": "Communication is the key to your partner's heart. Your wit charms.",
+        "money": "A good day for short deals and negotiations.",
         "mood": "Curiosity leads to interesting discoveries.",
-        "advice": "Write down your ideas — there are golden ones among them."
+        "advice": "Write down your ideas — there are some golden ones among them."
       },
       "cancer": {
-        "love": "The Moon enhances intuition in relationships. Trust your feelings.",
-        "money": "Time for saving and budget planning.",
+        "love": "The Moon heightens intuition in relationships. Trust your feelings.",
+        "money": "Time for saving and budgeting.",
         "mood": "Emotional depth is your strength today.",
-        "advice": "Spend the evening with close friends or family."
+        "advice": "Spend the evening with close ones."
       },
       "leo": {
         "love": "Your charisma is at its peak. Time for important confessions.",
-        "money": "Generosity will return a hundredfold. Don't be afraid to invest in yourself.",
+        "money": "Generosity will come back to you tenfold. Don't be afraid to invest in yourself.",
         "mood": "Solar energy fills you with optimism.",
-        "advice": "Allow yourself to be the center of attention — this is your day."
+        "advice": "Allow yourself to be in the spotlight — it's your day."
       },
       "virgo": {
         "love": "Attention to detail will strengthen your partner's trust.",
         "money": "An analytical approach will bring profit.",
-        "mood": "Order around you means order in your soul.",
-        "advice": "Set aside 15 minutes for planning — the result will exceed expectations."
+        "mood": "Order around you — order within.",
+        "advice": "Spend 15 minutes planning — the result will exceed expectations."
       },
       "libra": {
-        "love": "Harmony in relationships is achieved through compromise.",
-        "money": "Partnership projects will bring benefits to both sides.",
-        "mood": "A striving for beauty makes the day special.",
-        "advice": "Find a balance between work and rest."
+        "love": "Harmony in relationships comes through compromise.",
+        "money": "Partnership projects will be mutually profitable.",
+        "mood": "A desire for beauty makes the day special.",
+        "advice": "Find balance between work and rest."
       },
       "scorpio": {
         "love": "The depth of your feelings attracts — be sincere.",
-        "money": "Intuition will suggest a profitable deal.",
-        "mood": "Transformation begins from within.",
+        "money": "Intuition will point to a profitable deal.",
+        "mood": "Transformation begins within.",
         "advice": "Let go of what no longer serves you."
       },
       "sagittarius": {
         "love": "Optimism is contagious — share it with your partner.",
-        "money": "Bold ideas will bring unexpected profit.",
-        "mood": "A thirst for adventure leads to interesting meetings.",
-        "advice": "Expand your horizons — the world is full of opportunities."
+        "money": "Bold ideas may bring unexpected profit.",
+        "mood": "A thirst for adventure leads to interesting encounters.",
+        "advice": "Broaden your horizons — the world is full of opportunities."
       },
       "capricorn": {
-        "love": "Reliability is your main virtue in the eyes of a partner.",
-        "money": "Long-term investments will bear fruit.",
+        "love": "Reliability is your main virtue in your partner's eyes.",
+        "money": "Long-term investments will pay off.",
         "mood": "Determination leads to success.",
-        "advice": "Set one important goal and take a step towards it."
+        "advice": "Set one important goal and take a step toward it."
       },
       "aquarius": {
-        "love": "Originality attracts non-standard partners.",
-        "money": "Innovative ideas can bring profit.",
+        "love": "Originality attracts unconventional partners.",
+        "money": "Innovative ideas might bring profit.",
         "mood": "Freedom of thought opens new horizons.",
         "advice": "Don't be afraid to be yourself — it's your superpower."
       },
       "pisces": {
         "love": "Romance is in the air. Trust your intuition.",
         "money": "A creative approach to finances will open new sources.",
-        "mood": "Dreaminess is not a weakness, but a gift.",
+        "mood": "Dreaminess is not a weakness but a gift.",
         "advice": "Devote time to creativity — it will fill your soul."
       }
     },
     "preview_blocks": [
-      {
-        "key": "love",
-        "title": "Love"
-      },
-      {
-        "key": "money",
-        "title": "Money"
-      },
-      {
-        "key": "mood",
-        "title": "Mood"
-      },
-      {
-        "key": "advice",
-        "title": "Advice"
-      }
+      { "key": "love", "title": "Love" },
+      { "key": "money", "title": "Money" },
+      { "key": "mood", "title": "Mood" },
+      { "key": "advice", "title": "Advice" }
     ],
     "what_you_get": "What you get every day",
-    "pick_your_sign": "Pick your sign to see a sample forecast",
+    "pick_your_sign": "Pick your sign and see a sample forecast",
     "today_for": "Today for",
-    "streak": "You've been reading for 7 days in a row",
+    "streak": "You've been reading 7 days in a row",
     "change_time": "Change time",
     "save": "Save",
     "share": "Share"
@@ -197,17 +194,17 @@
   "Header": {
     "possibilities": "Features",
     "pricing": "Pricing",
-    "start": "Start",
+    "start": "Get started",
     "start_free": "Start for free"
   },
   "HeroSection": {
-    "stars": "The Stars",
-    "will_guide_you": "will tell you",
+    "stars": "The stars",
+    "will_guide_you": "will guide you",
     "about_your_future": "about your day",
     "get_personal_hooscope": "Get a personal horoscope every morning on Telegram",
     "try_for_free": "Try for free",
     "open_on_telegram": "Open in Telegram",
-    "free_period_one_click_cancel": "7 days free • Cancel in one click"
+    "free_period_one_click_cancel": "7 days free • One-click cancellation"
   },
   "FeaturesSection": {
     "title": "4 blocks every day",
@@ -226,7 +223,7 @@
       {
         "id": 3,
         "title": "Mood",
-        "description": "Energy of the day"
+        "description": "Daily energy"
       },
       {
         "id": 4,
@@ -234,8 +231,8 @@
         "description": "Practical recommendations"
       }
     ],
-    "delivery_time": "07:30 local time",
-    "time_for_reading": "unlimited reading time"
+    "delivery_time": "07:30 in your time zone",
+    "time_for_reading": "Reading time: unlimited"
   },
   "DemoSection": {
     "blocks": [
@@ -247,7 +244,7 @@
       {
         "id": 2,
         "title": "Money",
-        "text": "Generosity will return a hundredfold. Invest in yourself."
+        "text": "Generosity will return tenfold. Invest in yourself."
       },
       {
         "id": 3,
@@ -257,17 +254,17 @@
       {
         "id": 4,
         "title": "Advice",
-        "text": "Allow yourself to be the center of attention — this is your day."
+        "text": "Allow yourself to be in the spotlight — it's your day."
       }
     ],
     "example": "Sample forecast",
-    "your_forecast_will_look_like": "Here is what your morning message looks like",
+    "your_forecast_will_look_like": "This is how your morning message will look",
     "online": "online",
-    "take_your_forecast": "Get my forecast"
+    "take_your_forecast": "Get your forecast"
   },
   "FooterSection": {
-    "personalized_horoscope": "Personalized horoscopes on Telegram",
-    "open_on_telegram": "Open Bot",
+    "personalized_horoscope": "Personal horoscopes in Telegram",
+    "open_on_telegram": "Open the bot",
     "pricing": "Pricing",
     "free_forecast": "Free forecast",
     "made_with": "Made with",
@@ -281,39 +278,39 @@
   "FAQSection": {
     "faqs": [
       {
-        "question": "How do I cancel my subscription?",
-        "answer": "Use the /cancel command in the bot or the button in your profile. Access remains until the end of the period."
+        "question": "How do I cancel the subscription?",
+        "answer": "Use the /cancel command in the bot or the button in your account. Access remains until the end of the period."
       },
       {
         "question": "When do forecasts arrive?",
-        "answer": "At 07:30 your time. Premium users can choose any time."
+        "answer": "At 07:30 in your time zone. On Premium you can choose any time."
       },
       {
-        "question": "How does the trial period work?",
-        "answer": "7 days free. Cancel before it ends and you won't be charged anything."
+        "question": "How does the trial work?",
+        "answer": "7 days free. Cancel before the end — you won't be charged."
       },
       {
-        "question": "What are the payment methods?",
+        "question": "What payment methods are available?",
         "answer": "Visa, Mastercard, Belkart via the secure bePaid gateway."
       }
     ],
-    "aq": "Q & A",
-    "most_important_short": "The essentials — in brief",
-    "have_more_questions": "Still have questions? Message the bot"
+    "aq": "Questions & Answers",
+    "most_important_short": "The most important — short",
+    "have_more_questions": "Have more questions? Message the bot"
   },
   "HowItWork": {
     "steps": [
       {
         "id": 1,
-        "title": "Select sign",
-        "description": "Specify your zodiac sign and date of birth for accurate forecasts",
-        "highlight": "30 seconds"
+        "title": "Choose a sign",
+        "description": "Provide your zodiac sign and birth date for accurate forecasts",
+        "highlight": "no time limits"
       },
       {
         "id": 2,
-        "title": "Subscribe",
-        "description": "Secure payment via your region's payment system. 7 days free.",
-        "highlight": "From 3 BYN/mo"
+        "title": "Activate a subscription",
+        "description": "Secure payment through the payment system in your region.",
+        "highlight": "7 days free."
       },
       {
         "id": 3,
@@ -337,8 +334,8 @@
         "id": "plus",
         "name": "Plus",
         "features": [
-          "Everything in Basic",
-          "Partner compatibility",
+          "Everything from Basic",
+          "Daily compatibility",
           "Daily affirmations"
         ],
         "badge": "Popular"
@@ -346,7 +343,11 @@
       {
         "id": "premium",
         "name": "Premium",
-        "features": ["Everything in Plus", "Important daily numbers", "Ad-free"]
+        "features": [
+          "Everything from Plus",
+          "Important numerical values of the day",
+          "No ads"
+        ]
       }
     ],
     "days_free": "7 days free",
@@ -363,48 +364,51 @@
         "id": 1,
         "name": "Anna M.",
         "zodiac": "Leo",
-        "text": "I started reading forecasts every morning — now it's my little ritual. The advice is really useful and helps set the mood for the day!",
+        "text": "I started reading the forecasts every morning — now it's my little ritual. The tips are really helpful and set me up for the day!",
         "rating": 5
       },
       {
         "id": 2,
         "name": "Dmitry K.",
         "zodiac": "Scorpio",
-        "text": "I was skeptical about horoscopes, but these forecasts were a pleasant surprise. No fluff — just specific recommendations.",
+        "text": "I was skeptical about horoscopes, but these forecasts pleasantly surprised me. No fluff — just concrete recommendations.",
         "rating": 5
       },
       {
         "id": 3,
         "name": "Elena V.",
         "zodiac": "Libra",
-        "text": "It is very convenient to get the forecast right in Telegram. Daily compatibility with my husband is a separate plus, it helps to understand each other better.",
+        "text": "Very convenient to receive the forecast right in Telegram. The daily compatibility with my husband is a big plus — helps understand each other better.",
         "rating": 5
       },
       {
         "id": 4,
         "name": "Maxim T.",
         "zodiac": "Aries",
-        "text": "Subscribed to premium — satisfied! Important dates of the month help plan meetings and negotiations. Recommended.",
+        "text": "Subscribed to Premium — satisfied! Important dates for the month help plan meetings and negotiations. I recommend it.",
         "rating": 5
       },
       {
         "id": 5,
         "name": "Olga S.",
         "zodiac": "Pisces",
-        "text": "Daily affirmations are my favorite feature. They help maintain a positive attitude even on difficult days.",
+        "text": "Daily affirmations are my favorite feature. They help keep a positive mindset even on tough days.",
         "rating": 5
       }
     ],
     "what_they_say": "What our subscribers say",
-    "over_1000_happy_users": "Over 1000 users are already receiving daily forecasts"
+    "over_1000_happy_users": "Over 1000 users are already getting daily forecasts"
   },
   "SubscribePage": {
+    "your_details": "Your details",
+    "language": "Language",
+    "timezone": "Time zone",
     "your_sign": "Your zodiac sign",
     "choose_your_sign": "Choose your sign",
     "your_telegram": "Your Telegram",
     "where_to_send_forecast": "Where to send forecasts",
     "username": "Username",
-    "invalid_username": "Enter a valid Telegram username (e.g. @astro_user)",
+    "invalid_username": "Enter a valid Telegram username (e.g.: @astro_user)",
     "back": "Back",
     "next": "Next",
     "choose_pricing": "Choose a plan",
@@ -413,25 +417,21 @@
     "plan": "Plan",
     "monthly": "month",
     "seven_days_free_short": "7 days free",
-    "start_free": "Start for free",
+    "start_free": "Start free",
     "loading": "Loading...",
-    "agree_to_terms": "By clicking the button, you agree to the terms of service",
-    "subscribe_error_message": "Error processing subscription. Please try again.",
+    "agree_to_terms": "By clicking the button you agree to the service terms",
+    "subscribe_error_message": "Error while subscribing. Please try again.",
     "plans": [
       {
         "id": "basic",
         "name": "Basic",
-        "features": [
-          "Daily forecast",
-          "4 spheres of life",
-          "Delivery via Telegram"
-        ]
+        "features": ["Daily forecast", "4 life areas", "Delivery to Telegram"]
       },
       {
         "id": "plus",
         "name": "Plus",
         "features": [
-          "Everything in Basic",
+          "Everything from Basic",
           "Daily compatibility",
           "Affirmations"
         ]
@@ -439,7 +439,11 @@
       {
         "id": "premium",
         "name": "Premium",
-        "features": ["Everything in Plus", "Important daily numbers", "Ad-free"]
+        "features": [
+          "Everything from Plus",
+          "Important numerical values of the day",
+          "No ads"
+        ]
       }
     ],
     "today": "Today"
@@ -464,29 +468,29 @@
       }
     ],
     "subscribe": "Subscribe",
-    "today_forecast": "Forecast for today",
+    "today_forecast": "Today's forecast",
     "no_data": "No data",
-    "forecast_isnt_ready": "The forecast for this sign is not ready yet",
-    "choose_another_sign": "Try choosing another sign or come back later",
-    "get_daily_forecasts": "Get forecasts every day",
-    "get_in_telegram": "Straight to Telegram at a convenient time",
+    "forecast_isnt_ready": "Forecast for this sign is not ready yet",
+    "choose_another_sign": "Try selecting another sign or come back later",
+    "get_daily_forecasts": "Receive forecasts every day",
+    "get_in_telegram": "Directly in Telegram at a convenient time",
     "seven_days_free": "7 days free on any plan",
-    "disclaimer": "Entertainment and motivational content. Not financial, medical, or legal advice."
+    "disclaimer": "Entertaining and motivational content. Not financial, medical, or legal advice."
   },
   "CheckoutReturnPage": {
     "success_title": "Payment successful!",
     "success_description": "Your subscription is activated. The first forecast will arrive tomorrow morning.",
-    "trial_title": "Trial period activated!",
-    "trial_description": "You have successfully started the trial period. The first forecast will arrive tomorrow morning.",
+    "trial_title": "Trial activated!",
+    "trial_description": "You have successfully started a trial. The first forecast will arrive tomorrow morning.",
     "failed_title": "Payment failed",
-    "failed_description": "Unfortunately, there was a problem with the payment. Please try again or choose another payment method.",
+    "failed_description": "Unfortunately, there was an issue with payment. Please try again or choose another payment method.",
     "pending_title": "Processing payment",
-    "pending_description": "This may take a few minutes. We will send a notification to the bot. Thank you for your patience!",
+    "pending_description": "This may take a few minutes. We'll send a notification in the bot. Thank you for your patience!",
     "what_is_next": "What's next:",
     "open_the_bot": "Open the bot @Dailyastrobelarusbot in Telegram",
     "press_start": "Press /start to activate",
-    "enjoy_forecasts": "Enjoy your daily forecasts!",
-    "open_bot_button": "Open bot in Telegram",
+    "enjoy_forecasts": "Enjoy the forecasts!",
+    "open_bot_button": "Open the bot in Telegram",
     "try_again_button": "Try again",
     "go_to_home": "Go to home"
   },
@@ -495,7 +499,12 @@
     "success_message": "Your subscription is activated. The first forecast will arrive tomorrow morning.",
     "seven_days_free": "7 days free",
     "cancel_anytime": "Cancel anytime",
-    "open_the_bot": "Open bot in Telegram",
-    "homepage": "Go to home"
+    "open_the_bot": "Open the bot in Telegram",
+    "homepage": "Home"
+  },
+  "ErrorPage": {
+    "sorry": "Sorry",
+    "error_message": "Unfortunately, there was a problem with the payment. Please try again or choose another payment method.",
+    "return_home": "Go to home"
   }
 }

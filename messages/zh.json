@@ -1,268 +1,213 @@
 {
   "Common": {
     "zodiac_signs_array": [
-      {
-        "id": "aries",
-        "name": "白羊座"
-      },
-      {
-        "id": "taurus",
-        "name": "金牛座"
-      },
-      {
-        "id": "gemini",
-        "name": "双子座"
-      },
-      {
-        "id": "cancer",
-        "name": "巨蟹座"
-      },
-      {
-        "id": "leo",
-        "name": "狮子座"
-      },
-      {
-        "id": "virgo",
-        "name": "处女座"
-      },
-      {
-        "id": "libra",
-        "name": "天秤座"
-      },
-      {
-        "id": "scorpio",
-        "name": "天蝎座"
-      },
-      {
-        "id": "sagittarius",
-        "name": "射手座"
-      },
-      {
-        "id": "capricorn",
-        "name": "摩羯座"
-      },
-      {
-        "id": "aquarius",
-        "name": "水瓶座"
-      },
-      {
-        "id": "pisces",
-        "name": "双鱼座"
-      }
+      { "id": "aries", "name": "白羊座" },
+      { "id": "taurus", "name": "金牛座" },
+      { "id": "gemini", "name": "双子座" },
+      { "id": "cancer", "name": "巨蟹座" },
+      { "id": "leo", "name": "狮子座" },
+      { "id": "virgo", "name": "处女座" },
+      { "id": "libra", "name": "天秤座" },
+      { "id": "scorpio", "name": "天蝎座" },
+      { "id": "sagittarius", "name": "射手座" },
+      { "id": "capricorn", "name": "摩羯座" },
+      { "id": "aquarius", "name": "水瓶座" },
+      { "id": "pisces", "name": "双鱼座" }
     ]
   },
-   "Bot": {
-    "welcome_title": "欢迎来到 Daily Astro!",
-    "welcome_text": "我每天早上都会为您发送个人运势。",
+  "Bot": {
+    "welcome_title": "欢迎来到 Daily Astro！",
+    "welcome_text": "我会在每天早上向您发送个性化星座运势。",
     "trial_btn": "免费试用",
     "subscribe_btn": "订阅",
-    "settings_btn": "设置 ⚙️",
-    "change_zodiac_btn": "更改星座 ♈",
-    "change_lang_btn": "语言 / Language 🌐",
-    "change_tz_btn": "时区 🌍",
-    "change_time_btn": "推送时间 ⏰",
+    "settings_btn": "设置",
+    "change_zodiac_btn": "更改星座",
     "welcome_back": "欢迎回来！您的星座：<b>{sign}</b>。",
-    "choose_sign": "选择您的星座：",
-    "sign_selected": "太好了！您的星座是 <b>{sign}</b>。\n现在您将收到运势预测。",
-    "plan_active": "订阅方案：<b>{plan}</b>",
-    "plan_trial": "试用期至：<b>{date}</b>",
+    "choose_sign": "请选择您的星座：",
+    "sign_selected": "太好了！您的星座是 <b>{sign}</b>。\n现在您将会收到预测。",
+    "plan_active": "订阅：<b>{plan}</b>",
+    "plan_trial": "试用截止：<b>{date}</b>",
     "plan_expired": "订阅已过期",
-    "plan_info_header": "<b>当前方案：</b> {current}\n\n<b>可用方案：</b>",
-    "plan_info_body": "<b>基础版</b> — 每日运势\n<b>进阶版</b> — 兼容性 + 肯定语\n<b>高级版</b> — 关键日期 + 灵活时间",
+    "plan_info_header": "<b>您的套餐：</b> {current}\n\n<b>可用套餐：</b>",
+    "plan_info_body": "<b>基础</b> — 每日运势\n<b>Plus</b> — 配对 + 肯定语\n<b>高级</b> — 重要日期 + 自选时间",
     "cancel_sub_btn": "取消订阅",
-    "settings_header": "<b>设置</b>\n\n星座：<b>{sign}</b>\n推送时间：<b>{time}</b>\n状态：<b>{status}</b>",
+    "settings_header": "<b>设置</b>\n\n星座：<b>{sign}</b>\n发送时间：<b>{time}</b>\n状态：<b>{status}</b>",
     "status_active": "活跃 ✅",
     "status_paused": "已暂停 ⏸️",
     "pause_btn": "暂停",
     "resume_btn": "恢复",
     "pause_done": "推送已暂停。",
     "resume_done": "推送已恢复！",
-    "cancel_confirm": "您确定吗？访问权限将保留到期末。",
-    "yes_cancel": "是的，取消",
+    "cancel_confirm": "确定要取消吗？访问权限将持续到本周期结束。",
+    "yes_cancel": "是，取消",
     "no_back": "不，返回",
-    "sub_canceled": "订阅已取消。访问权限至 {date}。",
-    "no_sub": "没有活跃的订阅。",
-    "select_lang_text": "选择语言：",
-    "lang_updated": "语言已更改为 <b>中文 🇨🇳</b>",
-    "select_tz_text": "选择您所在的时区城市：",
-    "tz_updated": "时区已更新：<b>{zone}</b>。\n当地时间：{time}",
-    "select_time_text": "选择方便的接收时间：",
-    "time_updated": "太好了！运势将在 <b>{time}</b> 发送。",
-    "premium_only": "时间选择仅在 <b>高级版 (Premium)</b> 中可用。",
-    "upgrade_btn": "升级方案",
-    "help_text": "<b>指令：</b>\n/start - 开始\n/plan - 订阅信息\n/settings - 设置"
+    "sub_canceled": "订阅已取消。访问有效期至 {date}。",
+    "no_sub": "当前没有有效订阅。",
+    "error_register": "请先按 /start",
+    "unknown_command": "未知命令。请使用 /help",
+    "help_text": "<b>命令：</b>\n/start - 开始\n/plan - 订阅\n/settings - 设置",
+    "change_time_btn": "发送时间 ⏰",
+    "select_time_text": "请选择接收运势的合适时间（按您时区）：",
+    "time_updated": "太好了！运势现在将在 <b>{time}</b> 发送。",
+    "premium_only": "仅 <b>高级</b> 套餐可选择发送时间。\n\n当前套餐的发送时间为默认：07:00。",
+    "upgrade_btn": "升级套餐",
+    "change_lang_btn": "语言 / Language 🌐",
+    "change_tz_btn": "时区 🌍",
+    "select_lang_text": "选择语言 / Select language:",
+    "lang_updated": "语言已更改",
+    "select_tz_text": "请选择您所在时区的城市：",
+    "tz_updated": "时区已更新：<b>{zone}</b>。\n您当地的当前时间：{time}",
+    "trial_ended_text": "<b>您的试用期已结束！</b> 🏁\n\n希望星象在这周对您有所帮助。\n如需继续接收个性化运势，请订阅完整版。",
+    "trial_ended_btn": "延长访问 🚀",
+    "open_menu": "打开菜单 📱",
+    "subscribe_stopped_recurring_payment_error": "<b>⚠️ 订阅已暂停</b>\n\n为套餐 <b>${sub.plan.name}</b> 自动扣费失败（系统错误）。\n请重新绑定银行卡或联系支持。",
+    "success_binding": "<b>✅ 银行卡绑定成功！</b>\n\n您的试用已激活。仅在试用结束后进行扣费。",
+    "success_recurrent_payment": "<b>✅ 订阅续费成功！</b>\n\n感谢您的支持。下一次扣费：{nextDateStr}。",
+    "payment_failed": "<b>⛔️ 订阅已暂停</b>\n\n`{reasonText}\n`我们无法续订访问权限。请充值以恢复订阅。"
   },
   "ForecastPreview": {
-    "select_sign": "选择您的星座",
+    "select_sign": "选择一个星座",
     "sample_forecasts": {
       "aries": {
-        "love": "今天星象有利于浪漫。火星入驻本宫，为您增添激情。",
-        "money": "进行财务谈判的好日子。您的自信将有助于说服合作伙伴。",
-        "mood": "精力充沛——将其投入到创作或运动中吧。",
-        "advice": "迈出重要的一步——现在是理想的时机。"
+        "love": "今天星象有利于浪漫。火星在您的星座，会增添热情。",
+        "money": "适合进行财务谈判的一天。您的自信会说服合作方。",
+        "mood": "精力充沛——把它用在创造或运动上。",
+        "advice": "在重要事务上迈出第一步——现在是最佳时机。"
       },
       "taurus": {
-        "love": "金星让您魅力四射。是时候巩固关系了。",
-        "money": "稳健是您的王牌。避免高风险投资。",
-        "mood": "冷静与自信是您今天的主要盟友。",
-        "advice": "用美好的事物犒劳自己——这是您应得的。"
+        "love": "金星让您格外有吸引力。是巩固关系的好时机。",
+        "money": "稳定是您的王牌。避免高风险投资。",
+        "mood": "平静与自信是您今天的最佳伴侣。",
+        "advice": "宠爱一下自己——您值得。"
       },
       "gemini": {
-        "love": "沟通是通往伴侣心扉的钥匙。您的机智将征服一切。",
-        "money": "适合短期交易和谈判的幸运日。",
-        "mood": "好奇心将引领您发现有趣的事物。",
-        "advice": "记录下您的想法——其中蕴藏着黄金般的创意。"
+        "love": "沟通是打动伴侣的关键。您的机智非常吸引人。",
+        "money": "适合短期交易和谈判的一天。",
+        "mood": "好奇心会带来有趣的发现。",
+        "advice": "把想法记下来——其中有很有价值的。"
       },
       "cancer": {
-        "love": "月亮增强了关系中的直觉。相信您的感觉。",
-        "money": "适合储蓄和规划预算的时间。",
-        "mood": "情感的深度是您今天的力量源泉。",
-        "advice": "与亲密的人共度良宵。"
+        "love": "月亮增强了您在关系中的直觉。信任自己的感觉。",
+        "money": "适合储蓄和制定预算的时机。",
+        "mood": "情感深度是您今天的力量。",
+        "advice": "与亲近的人共度一个晚上。"
       },
       "leo": {
-        "love": "您的个人魅力达到顶峰。适合进行重要表白。",
-        "money": "慷慨将带来百倍的回报。不要害怕投资自己。",
-        "mood": "太阳能量让您充满乐观。",
-        "advice": "让自己成为关注的焦点——这是属于您的日子。"
+        "love": "您的魅力处于巅峰。适合做重要的告白。",
+        "money": "慷慨会有十倍回报。别怕投资自己。",
+        "mood": "阳性能量让您充满乐观。",
+        "advice": "允许自己成为焦点——今天属于您。"
       },
       "virgo": {
-        "love": "关注细节将增强伴侣的信任。",
-        "money": "分析思维将带来收益。",
-        "mood": "环境井井有条，内心自然安宁。",
-        "advice": "抽出15分钟进行规划——结果将超出预期。"
+        "love": "对细节的关注会增强伴侣的信任。",
+        "money": "分析性的方式将带来收益。",
+        "mood": "外在的秩序带来内心的平静。",
+        "advice": "花15分钟计划——结果会超出预期。"
       },
       "libra": {
-        "love": "关系中的和谐通过妥协来实现。",
-        "money": "合作项目将为双方带来利益。",
+        "love": "关系中的和谐来自妥协。",
+        "money": "合作项目将为双方带来收益。",
         "mood": "对美的追求让这一天变得特别。",
         "advice": "在工作与休息之间找到平衡。"
       },
       "scorpio": {
-        "love": "您深沉的情感令人着迷——保持真诚。",
-        "money": "直觉会提示您一笔划算的交易。",
-        "mood": "蜕变始于内心。",
-        "advice": "放下不再为您服务的事物。"
+        "love": "您情感的深度很有吸引力——要真诚。",
+        "money": "直觉会指出有利的交易。",
+        "mood": "转变从内心开始。",
+        "advice": "放手那些不再为您服务的事物。"
       },
       "sagittarius": {
-        "love": "乐观是可以传染的——与您的伴侣分享它。",
-        "money": "大胆的想法将带来意想不到的收益。",
-        "mood": "对冒险的渴望将带来有趣的邂逅。",
-        "advice": "拓宽视野——世界充满了机遇。"
+        "love": "乐观具有感染力——与伴侣分享它。",
+        "money": "大胆的想法可能带来意外收益。",
+        "mood": "对冒险的渴望会带来有趣的邂逅。",
+        "advice": "拓宽视野——世界充满机会。"
       },
       "capricorn": {
-        "love": "在伴侣眼中，可靠是您最大的优点。",
-        "money": "长期投资将结出硕果。",
-        "mood": "目标感引领成功。",
-        "advice": "设定一个重要目标并迈出一步。"
+        "love": "可靠是伴侣眼中您最重要的优点。",
+        "money": "长期投资将结出果实。",
+        "mood": "坚定的目标感带来成功。",
+        "advice": "设定一个重要目标并朝它迈出一步。"
       },
       "aquarius": {
-        "love": "独特的个性吸引不寻常的伴侣。",
-        "money": "创新理念可能带来利润。",
-        "mood": "思想的自由开启新的地平线。",
-        "advice": "不要害怕做自己——这是您的超能力。"
+        "love": "独特性会吸引非同寻常的伴侣。",
+        "money": "创新的想法可能带来收益。",
+        "mood": "思想的自由打开新的视野。",
+        "advice": "不要害怕做自己——那是您的超能力。"
       },
       "pisces": {
-        "love": "空气中弥漫着浪漫。相信您的直觉。",
-        "money": "对财务的创造性方法将开辟新来源。",
-        "mood": "爱做梦不是弱点，而是天赋。",
-        "advice": "花时间进行创作——它将充实您的灵魂。"
+        "love": "浪漫的氛围弥漫空气。相信您的直觉。",
+        "money": "对财务采取创造性方法将开辟新来源。",
+        "mood": "梦幻并非弱点，而是一种天赋。",
+        "advice": "花时间从事创作——它会滋养您的心灵。"
       }
     },
     "preview_blocks": [
       { "key": "love", "title": "爱情" },
-      { "key": "money", "title": "财运" },
+      { "key": "money", "title": "金钱" },
       { "key": "mood", "title": "心情" },
       { "key": "advice", "title": "建议" }
     ],
-    "what_you_get": "您每天将获得",
-    "pick_your_sign": "选择您的星座查看运势示例",
-    "today_for": "今日运势：",
+    "what_you_get": "您每天会收到的内容",
+    "pick_your_sign": "选择您的星座并查看示例预测",
+    "today_for": "今天的",
     "streak": "您已连续阅读 7 天",
-    "change_time": "修改时间",
+    "change_time": "更改时间",
     "save": "保存",
     "share": "分享"
   },
   "Header": {
-    "possibilities": "功能特权",
-    "pricing": "订阅计划",
+    "possibilities": "功能",
+    "pricing": "价格",
     "start": "开始",
     "start_free": "免费开始"
   },
   "HeroSection": {
-    "stars": "星辰",
-    "will_guide_you": "将为您揭示",
-    "about_your_future": "今日运势",
-    "get_personal_hooscope": "每天早上在 Telegram 接收个人专属运势",
+    "stars": "星象",
+    "will_guide_you": "将指引您",
+    "about_your_future": "关于您的一天",
+    "get_personal_hooscope": "每天早上在 Telegram 接收个性化星座运势",
     "try_for_free": "免费试用",
-    "open_on_telegram": "在 Telegram 中打开",
-    "free_period_one_click_cancel": "免费试用 7 天 • 一键取消"
+    "open_on_telegram": "在 Telegram 打开",
+    "free_period_one_click_cancel": "7 天免费 • 一键取消"
   },
   "FeaturesSection": {
-    "title": "每日 4 大板块",
-    "subtitle": "重点摘要——简洁明了",
+    "title": "每天 4 个板块",
+    "subtitle": "重要内容—简明扼要",
     "features": [
-      {
-        "id": 1,
-        "title": "爱情",
-        "description": "情感关系与浪漫"
-      },
-      {
-        "id": 2,
-        "title": "财运",
-        "description": "财务与职业生涯"
-      },
-      {
-        "id": 3,
-        "title": "心情",
-        "description": "今日能量状态"
-      },
-      {
-        "id": 4,
-        "title": "建议",
-        "description": "实用行动指南"
-      }
+      { "id": 1, "title": "爱情", "description": "关系与浪漫" },
+      { "id": 2, "title": "金钱", "description": "财务与职业" },
+      { "id": 3, "title": "心情", "description": "当日能量" },
+      { "id": 4, "title": "建议", "description": "实用建议" }
     ],
-    "delivery_time": "当地时间 07:30",
-    "time_for_reading": "阅读时间不限"
+    "delivery_time": "按您的时区 07:30 发送",
+    "time_for_reading": "阅读时间：不限"
   },
   "DemoSection": {
     "blocks": [
       {
         "id": 1,
         "title": "爱情",
-        "text": "您的个人魅力达到顶峰。适合进行重要表白。"
+        "text": "您的魅力处于巅峰。适合做重要的告白。"
       },
-      {
-        "id": 2,
-        "title": "财运",
-        "text": "慷慨将带来百倍的回报。投资自己。"
-      },
-      {
-        "id": 3,
-        "title": "心情",
-        "text": "太阳能量让您充满乐观。"
-      },
-      {
-        "id": 4,
-        "title": "建议",
-        "text": "让自己成为关注的焦点——这是属于您的日子。"
-      }
+      { "id": 2, "title": "金钱", "text": "慷慨将获得回报。投资自己。" },
+      { "id": 3, "title": "心情", "text": "太阳能量让您充满乐观。" },
+      { "id": 4, "title": "建议", "text": "允许自己成为焦点——今天属于您。" }
     ],
-    "example": "运势示例",
-    "your_forecast_will_look_like": "您的晨间消息将如下所示",
+    "example": "预测示例",
+    "your_forecast_will_look_like": "您的早间消息将如下所示",
     "online": "在线",
-    "take_your_forecast": "获取我的运势"
+    "take_your_forecast": "获取您的预测"
   },
   "FooterSection": {
-    "personalized_horoscope": "Telegram 个人专属运势",
+    "personalized_horoscope": "Telegram 上的个性化星座运势",
     "open_on_telegram": "打开机器人",
-    "pricing": "价格方案",
-    "free_forecast": "免费运势",
+    "pricing": "价格",
+    "free_forecast": "免费预测",
     "made_with": "制作于",
-    "by": "白俄罗斯"
+    "by": "在白俄罗斯"
   },
   "StickyCTA": {
-    "days_free": "免费试用 7 天",
+    "days_free": "7 天免费",
     "cancel_anytime": "随时取消",
     "start_now": "立即开始"
   },
@@ -270,84 +215,76 @@
     "faqs": [
       {
         "question": "如何取消订阅？",
-        "answer": "在机器人中输入 /cancel 命令或点击个人中心按钮。访问权限保留至周期结束。"
+        "answer": "在机器人中使用 /cancel 命令或在个人中心的按钮。访问权限持续到本周期结束。"
       },
       {
-        "question": "运势什么时候发送？",
-        "answer": "当地时间 07:30。高级会员（Premium）可以选择任意时间。"
+        "question": "何时收到预测？",
+        "answer": "按您时区的 07:30 发送。在高级套餐可以选择任意时间。"
       },
       {
         "question": "试用期如何运作？",
-        "answer": "7 天免费。如果在结束前取消，则无需支付任何费用。"
+        "answer": "7 天免费。在结束前取消——不会收费。"
       },
       {
         "question": "有哪些支付方式？",
-        "answer": "Visa, Mastercard, Belkart，通过安全的 bePaid 网关支付。"
+        "answer": "通过安全的 bePaid 网关支持 Visa、Mastercard、Belkart。"
       }
     ],
     "aq": "常见问题",
-    "most_important_short": "核心信息——简明扼要",
-    "have_more_questions": "还有疑问？联系机器人"
+    "most_important_short": "最重要的——简短明了",
+    "have_more_questions": "还有问题？请在机器人中留言"
   },
   "HowItWork": {
     "steps": [
       {
         "id": 1,
         "title": "选择星座",
-        "description": "提供您的星座和出生日期以获取精准运势",
-        "highlight": "需 30 秒"
+        "description": "提供您的星座和出生日期以获得更准确的预测",
+        "highlight": "时间不受限制"
       },
       {
         "id": 2,
         "title": "开启订阅",
-        "description": "通过您所在地区的支付系统安全支付。",
-        "highlight": "免费试用 7 天"
+        "description": "通过您所在地区的支付系统进行安全支付。",
+        "highlight": "7 天免费。"
       },
       {
         "id": 3,
-        "title": "接收运势",
-        "description": "每天早上——直接发送至 Telegram",
+        "title": "接收预测",
+        "description": "每天早上 — 直接发送到 Telegram",
         "highlight": "每天"
       }
     ],
-    "simple_and_fast": "简单快捷",
+    "simple_and_fast": "简单且快速",
     "how_it_works": "工作原理",
-    "follow_three_simple_steps": "简单三步，获取每日个人运势"
+    "follow_three_simple_steps": "通过三步即可每天收到个性化运势"
   },
   "PricingSection": {
     "plans": [
       {
         "id": "basic",
-        "name": "基础版",
-        "features": ["每日运势", "4 大运势板块"]
+        "name": "基础",
+        "features": ["每日预测", "4 个预测板块"]
       },
       {
         "id": "plus",
-        "name": "进阶版",
-        "features": [
-          "包含基础版所有功能",
-          "伴侣契合度",
-          "每日肯定语"
-        ],
+        "name": "Plus",
+        "features": ["基础全部功能", "每日配对", "每日肯定语"],
         "badge": "热门"
       },
       {
         "id": "premium",
-        "name": "尊享版",
-        "features": [
-          "包含进阶版所有功能",
-          "今日重要数字",
-          "无广告"
-        ]
+        "name": "高级",
+        "features": ["Plus 全部功能", "当日重要数值", "无广告"]
       }
     ],
-    "days_free": "免费试用 7 天",
-    "simple_pricing": "简单的价格方案",
-    "cancel_anytime": "随时一键取消",
+    "days_free": "7 天免费",
+    "simple_pricing": "透明定价",
+    "cancel_anytime": "一键随时取消",
     "month": "月",
     "features": "功能",
     "start_for_free": "免费开始",
-    "safe_payment": "通过您所在地区的支付系统安全支付"
+    "safe_payment": "通过您地区的支付系统安全支付"
   },
   "TestimonialSection": {
     "testimonials": [
@@ -355,139 +292,127 @@
         "id": 1,
         "name": "Anna M.",
         "zodiac": "狮子座",
-        "text": "开始每天早上阅读运势——现在这成了我的小仪式。建议真的很有用，帮助我调整一天的状态！",
+        "text": "我开始每天早上阅读预测——现在这是我的小仪式。建议非常有用，能帮助我调整一天的状态！",
         "rating": 5
       },
       {
         "id": 2,
         "name": "Dmitry K.",
         "zodiac": "天蝎座",
-        "text": "以前对星座持怀疑态度，但这些预测让我惊喜。没有废话——只有具体的建议。",
+        "text": "我曾对星座持怀疑态度，但这些预测让我惊喜。没有废话——只有具体建议。",
         "rating": 5
       },
       {
         "id": 3,
         "name": "Elena V.",
         "zodiac": "天秤座",
-        "text": "直接在 Telegram 接收运势非常方便。与丈夫的每日契合度是一个额外的加分项，有助于更好地理解彼此。",
+        "text": "直接在 Telegram 接收预测非常方便。每日配对功能很棒，帮助我们更好地理解彼此。",
         "rating": 5
       },
       {
         "id": 4,
         "name": "Maxim T.",
         "zodiac": "白羊座",
-        "text": "订阅了尊享版——很满意！每月的吉日帮助我规划会议和谈判。推荐。",
+        "text": "我订阅了高级——很满意！每月的重要日期帮助计划会议和谈判。推荐。",
         "rating": 5
       },
       {
         "id": 5,
         "name": "Olga S.",
         "zodiac": "双鱼座",
-        "text": "每日肯定语是我最喜欢的功能。即使在困难的日子里，也能帮我保持积极的心态。",
+        "text": "每日肯定语是我最喜欢的功能。即使在艰难的日子也能保持积极心态。",
         "rating": 5
       }
     ],
-    "what_they_say": "用户评价",
-    "over_1000_happy_users": "已有超过 1000 名用户在接收每日运势"
+    "what_they_say": "订阅者怎么说",
+    "over_1000_happy_users": "已有超过 1000 名用户每天收到预测"
   },
   "SubscribePage": {
+    "your_details": "您的信息",
+    "language": "语言",
+    "timezone": "时区",
     "your_sign": "您的星座",
     "choose_your_sign": "选择您的星座",
     "your_telegram": "您的 Telegram",
-    "where_to_send_forecast": "运势发送至哪里",
+    "where_to_send_forecast": "将预测发送至",
     "username": "用户名",
-    "invalid_username": "请输入有效的 Telegram 用户名 (例如: @astro_user)",
+    "invalid_username": "请输入正确的 Telegram 用户名（例如：@astro_user）",
     "back": "返回",
     "next": "下一步",
-    "choose_pricing": "选择方案",
-    "seven_days_free": "任意方案均可免费试用 7 天",
+    "choose_pricing": "选择套餐",
+    "seven_days_free": "任一套餐均可 7 天免费",
     "popular": "热门",
-    "plan": "方案",
+    "plan": "套餐",
     "monthly": "月",
     "seven_days_free_short": "7 天免费",
     "start_free": "免费开始",
     "loading": "加载中...",
     "agree_to_terms": "点击按钮即表示您同意服务条款",
-    "subscribe_error_message": "订阅处理出错。请重试。",
+    "subscribe_error_message": "订阅时出错。请重试。",
     "plans": [
       {
         "id": "basic",
-        "name": "基础版",
-        "features": [
-          "每日运势",
-          "4 大生活领域",
-          "Telegram 推送"
-        ]
+        "name": "基础",
+        "features": ["每日预测", "4 个生活领域", "发送到 Telegram"]
       },
       {
         "id": "plus",
-        "name": "进阶版",
-        "features": ["包含基础版所有功能", "今日契合度", "肯定语"]
+        "name": "Plus",
+        "features": ["基础全部功能", "每日配对", "肯定语"]
       },
       {
         "id": "premium",
-        "name": "尊享版",
-        "features": [
-          "包含进阶版所有功能",
-          "今日重要数字",
-          "无广告"
-        ]
+        "name": "高级",
+        "features": ["Plus 全部功能", "当日重要数值", "无广告"]
       }
     ],
     "today": "今天"
   },
   "ForecastPage": {
     "blocks": [
-      {
-        "key": "love",
-        "title": "爱情"
-      },
-      {
-        "key": "money",
-        "title": "财运"
-      },
-      {
-        "key": "mood",
-        "title": "心情"
-      },
-      {
-        "key": "advice",
-        "title": "今日建议"
-      }
+      { "key": "love", "title": "爱情" },
+      { "key": "money", "title": "金钱" },
+      { "key": "mood", "title": "心情" },
+      { "key": "advice", "title": "今日建议" }
     ],
     "subscribe": "订阅",
     "today_forecast": "今日运势",
     "no_data": "无数据",
     "forecast_isnt_ready": "该星座的运势尚未准备好",
-    "choose_another_sign": "请尝试选择其他星座或稍后再来",
-    "get_daily_forecasts": "获取每日运势",
-    "get_in_telegram": "在方便的时间直接推送到 Telegram",
-    "seven_days_free": "任意方案均可免费试用 7 天",
-    "disclaimer": "娱乐与励志内容。不构成财务、医疗或法律建议。"
+    "choose_another_sign": "试试选择其他星座或稍后再来",
+    "get_daily_forecasts": "每天接收运势",
+    "get_in_telegram": "在 Telegram 中以合适时间直接接收",
+    "seven_days_free": "任一套餐 7 天免费",
+    "disclaimer": "娱乐性及励志类内容，不构成财务、医疗或法律建议。"
   },
   "CheckoutReturnPage": {
     "success_title": "支付成功！",
-    "success_description": "您的订阅已激活。第一份运势将于明早送达。",
-    "trial_title": "试用期已激活！",
-    "trial_description": "您已成功开启试用期。第一份运势将于明早送达。",
+    "success_description": "您的订阅已激活。第一个预测将于明天早上发送。",
+    "trial_title": "试用已激活！",
+    "trial_description": "您已成功开始试用。第一个预测将于明天早上发送。",
     "failed_title": "支付失败",
-    "failed_description": "很遗憾，支付过程中出现问题。请重试或选择其他支付方式。",
-    "pending_title": "正在处理支付",
-    "pending_description": "这可能需要几分钟。我们将发送通知到机器人。感谢您的耐心等待！",
+    "failed_description": "很遗憾，支付出现问题。请重试或选择其他支付方式。",
+    "pending_title": "支付处理中",
+    "pending_description": "这可能需要几分钟。我们会在机器人中发送通知。感谢您的耐心！",
     "what_is_next": "接下来：",
-    "open_the_bot": "在 Telegram 中打开 @Dailyastrobelarusbot",
-    "press_start": "点击 /start 进行激活",
-    "enjoy_forecasts": "享受您的每日运势！",
-    "open_bot_button": "在 Telegram 中打开机器人",
-  "try_again_button": "重试",
-  "go_to_home": "返回首页"
+    "open_the_bot": "在 Telegram 打开机器人 @Dailyastrobelarusbot",
+    "press_start": "按 /start 以激活",
+    "enjoy_forecasts": "享受每日预测！",
+    "open_bot_button": "在 Telegram 打开机器人",
+    "try_again_button": "再试一次",
+    "go_to_home": "返回首页"
   },
   "SuccessPage": {
-    "gratulations": "祝贺您！",
-    "success_message": "您的订阅已激活。第一份运势将于明早送达。",
+    "gratulations": "恭喜！",
+    "success_message": "您的订阅已激活。第一个预测将于明天早上发送。",
     "seven_days_free": "7 天免费",
     "cancel_anytime": "随时取消",
-    "open_the_bot": "在 Telegram 中打开机器人",
+    "open_the_bot": "在 Telegram 打开机器人",
     "homepage": "返回首页"
+  },
+  "ErrorPage": {
+    "sorry": "抱歉",
+    "error_message": "很遗憾，支付时出现问题。请重试或选择其他支付方式。",
+    "return_home": "返回首页"
   }
 }
