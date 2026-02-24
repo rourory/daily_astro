@@ -1,30 +1,25 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Sparkles, Send, ChevronDown } from "lucide-react"
-import { ZodiacIcons } from "./zodiac-icons"
-
-const ZODIAC_SIGNS = [
-  { sign: "aries" as const, name: "Овен" },
-  { sign: "taurus" as const, name: "Телец" },
-  { sign: "gemini" as const, name: "Близнецы" },
-  { sign: "cancer" as const, name: "Рак" },
-  { sign: "leo" as const, name: "Лев" },
-  { sign: "virgo" as const, name: "Дева" },
-  { sign: "libra" as const, name: "Весы" },
-  { sign: "scorpio" as const, name: "Скорпион" },
-  { sign: "sagittarius" as const, name: "Стрелец" },
-  { sign: "capricorn" as const, name: "Козерог" },
-  { sign: "aquarius" as const, name: "Водолей" },
-  { sign: "pisces" as const, name: "Рыбы" },
-]
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, Send, ChevronDown } from "lucide-react";
+import { ZodiacIcons } from "./zodiac-icons";
+import { useTranslations } from "next-intl";
+import { ZODIAC_SIGNS } from "@/lib/types/enums";
+import { Link } from "@/lib/navigation";
 
 function CosmicBackground() {
   const [stars, setStars] = useState<
-    Array<{ id: number; x: number; y: number; size: number; opacity: number; delay: number; duration: number }>
-  >([])
+    Array<{
+      id: number;
+      x: number;
+      y: number;
+      size: number;
+      opacity: number;
+      delay: number;
+      duration: number;
+    }>
+  >([]);
 
   useEffect(() => {
     const newStars = Array.from({ length: 60 }, (_, i) => ({
@@ -35,9 +30,9 @@ function CosmicBackground() {
       opacity: Math.random() * 0.5 + 0.3,
       delay: Math.random() * 5,
       duration: Math.random() * 3 + 2,
-    }))
-    setStars(newStars)
-  }, [])
+    }));
+    setStars(newStars);
+  }, []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -63,30 +58,38 @@ function CosmicBackground() {
         />
       ))}
     </div>
-  )
+  );
 }
 
 export function HeroSection() {
-  const [activeSign, setActiveSign] = useState(0)
-  const [mounted, setMounted] = useState(false)
+  const [activeSign, setActiveSign] = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  const t = useTranslations("HeroSection");
+
+  const tCommon = useTranslations("Common");
+  const localizedZodiacSigns = tCommon.raw("zodiac_signs_array") as {
+    id: string;
+    name: string;
+  }[];
 
   useEffect(() => {
-    setMounted(true)
+    setMounted(true);
     const interval = setInterval(() => {
-      setActiveSign((prev) => (prev + 1) % ZODIAC_SIGNS.length)
-    }, 2500)
-    return () => clearInterval(interval)
-  }, [])
+      setActiveSign((prev) => (prev + 1) % ZODIAC_SIGNS.length);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
 
-  const currentSign = ZODIAC_SIGNS[activeSign]
-  const ZodiacIcon = ZodiacIcons[currentSign.sign]
+  const currentSign = ZODIAC_SIGNS[activeSign];
+  const ZodiacIcon = ZodiacIcons[currentSign.id as keyof typeof ZodiacIcons];
 
   if (!mounted) {
     return (
       <section className="relative min-h-[100dvh] flex flex-col items-center justify-center px-6">
         <div className="w-24 h-24 mx-auto rounded-full bg-card animate-pulse" />
       </section>
-    )
+    );
   }
 
   return (
@@ -100,18 +103,22 @@ export function HeroSection() {
               <ZodiacIcon />
             </div>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground font-medium">{currentSign.name}</p>
+          <p className="mt-4 text-sm text-muted-foreground font-medium">
+            {localizedZodiacSigns.find((s) => s.id === currentSign.id)?.name}
+          </p>
         </div>
 
         {/* Main heading */}
         <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium leading-tight mb-4">
-          <span className="text-cosmic">Звёзды</span> расскажут
-          <br />о вашем дне
+          <span className="text-cosmic">{t("stars")}</span>{" "}
+          {t("will_guide_you")}
+          <br />
+          {t("about_your_future")}
         </h1>
 
         {/* Subtitle */}
         <p className="text-base sm:text-lg text-muted-foreground mb-10 max-w-sm mx-auto leading-relaxed">
-          Получайте персональный гороскоп каждое утро в Telegram
+          {t("get_personal_hooscope")}
         </p>
 
         {/* Primary CTA */}
@@ -121,9 +128,12 @@ export function HeroSection() {
             className="w-full text-lg py-7 bg-primary text-primary-foreground hover:bg-primary/90 glow rounded-2xl font-medium transition-all active:scale-[0.98]"
             asChild
           >
-            <Link href="/subscribe" className="flex items-center justify-center gap-3">
+            <Link
+              href="/subscribe"
+              className="flex items-center justify-center gap-3"
+            >
               <Sparkles className="w-5 h-5" />
-              Попробовать бесплатно
+              {t("try_for_free")}
             </Link>
           </Button>
 
@@ -133,16 +143,20 @@ export function HeroSection() {
             className="w-full text-base py-6 glass hover:bg-white/10 rounded-2xl transition-all"
             asChild
           >
-            <Link href="https://t.me/Dailyastrobelarusbot" className="flex items-center justify-center gap-2">
+            <a
+              href="https://t.me/Dailyastrobelarusbot"
+              className="flex items-center justify-center gap-2"
+            >
               <Send className="w-4 h-4" />
-              Открыть в Telegram
-            </Link>
+              {t("open_on_telegram")}
+            </a>
           </Button>
         </div>
 
         {/* Trust badge */}
         <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass text-sm text-muted-foreground">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />7 дней бесплатно • Отмена в один клик
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          {t("free_period_one_click_cancel")}
         </div>
       </div>
 
@@ -151,5 +165,5 @@ export function HeroSection() {
         <ChevronDown className="w-6 h-6 text-muted-foreground/50" />
       </div>
     </section>
-  )
+  );
 }

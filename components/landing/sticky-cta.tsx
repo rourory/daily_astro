@@ -1,28 +1,31 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Sparkles, X, ChevronUp } from "lucide-react"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Sparkles, X, ChevronUp } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Link } from "@/lib/navigation";
 
 export function StickyCTA() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isDismissed, setIsDismissed] = useState(false)
+  const [isVisible, setIsVisible] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+
+  const t = useTranslations("StickyCTA");
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsVisible(window.scrollY > 400)
-    }
+      setIsVisible(window.scrollY > 400);
+    };
 
-    window.addEventListener("scroll", handleScroll, { passive: true })
-    return () => window.removeEventListener("scroll", handleScroll)
-  }, [])
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
-  if (isDismissed || !isVisible) return null
+  if (isDismissed || !isVisible) return null;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 pb-6 md:hidden safe-bottom">
@@ -36,8 +39,10 @@ export function StickyCTA() {
         </button>
 
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm">7 дней бесплатно</p>
-          <p className="text-xs text-muted-foreground truncate">Отмена в любой момент</p>
+          <p className="font-medium text-sm">{t("days_free")}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {t("cancel_anytime")}
+          </p>
         </div>
 
         <button
@@ -55,10 +60,10 @@ export function StickyCTA() {
         >
           <Link href="/subscribe" className="flex items-center gap-1.5">
             <Sparkles className="w-4 h-4" />
-            Начать
+            {t("start_now")}
           </Link>
         </Button>
       </div>
     </div>
-  )
+  );
 }

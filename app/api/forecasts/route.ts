@@ -2,11 +2,10 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { Forecast } from "@prisma/client";
+// Типы могут импортироваться иначе, но для примера оставим ваши
 import {
   CompatibilityData,
-  ForecastSource,
-  IDailyForecast,
+  IDailyForecastIncoming,
   LuckyMetricsData,
 } from "@/lib/types/database";
 
@@ -16,43 +15,38 @@ function isISODateString(s: string) {
 
 export async function GET(request: Request) {
   /* ================= AUTH ================= */
-  const cookieStore = cookies();
-  const authCookie = (await cookieStore).get("admin_auth");
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get("admin_auth");
 
   if (authCookie?.value !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  /* ================= DATE ================= */
+  /* ================= URL PARAMS ================= */
   const url = new URL(request.url);
   const dateParam = url.searchParams.get("date");
+  // Добавляем поддержку локали, по умолчанию "ru"
+  const locale = url.searchParams.get("locale") || "ru";
 
+  /* ================= DATE LOGIC ================= */
   // Сегодня в UTC (00:00)
   const todayUTC = new Date();
   todayUTC.setUTCHours(0, 0, 0, 0);
-
   const todayStr = todayUTC.toISOString().slice(0, 10);
 
-  const dateStr =
-    dateParam && isISODateString(dateParam) ? dateParam : todayStr;
+  const dateStr = dateParam && isISODateString(dateParam) ? dateParam : todayStr;
 
-  // 🚨 КЛЮЧЕВОЙ МОМЕНТ:
-  // Всегда явно создаём UTC-границы дня
+  // Создаём UTC-границы дня
   const startOfDayUTC = new Date(`${dateStr}T00:00:00.000Z`);
   const endOfDayUTC = new Date(`${dateStr}T23:59:59.999Z`);
 
-  // Ограничение: сегодня и -30 дней
-  const minDateUTC = new Date(todayUTC);
-  minDateUTC.setUTCDate(minDateUTC.getUTCDate() - 30);
+  // Ограничение: сегодня и -30 дней (если нужно)
+  // const minDateUTC = new Date(todayUTC);
+  // minDateUTC.setUTCDate(minDateUTC.getUTCDate() - 30);
+  // if (startOfDayUTC < minDateUTC || startOfDayUTC > todayUTC) { ... } 
+  // (Оставил проверку дат на ваше усмотрение, в админке иногда полезно смотреть будущее)
 
-  if (startOfDayUTC < minDateUTC || startOfDayUTC > todayUTC) {
-    return NextResponse.json(
-      { error: "date out of allowed range" },
-      { status: 400 },
-    );
-  }
-
-  /* ================= DB ================= */
+  /* ================= DB QUERY ================= */
   try {
     const results = await prisma.forecast.findMany({
       where: {
@@ -61,27 +55,49 @@ export async function GET(request: Request) {
           lte: endOfDayUTC,
         },
       },
+      // ВАЖНО: Подтягиваем переводы только для выбранного языка
+      include: {
+        translations: {
+          where: { locale: locale },
+          take: 1, // На всякий случай берем один, хотя уникальность гарантирована схемой
+        },
+      },
       orderBy: { zodiacSign: "asc" },
     });
 
-    const payload: IDailyForecast[] = results.map((f: Forecast) => ({
-      id: f.id,
-      zodiac_sign: f.zodiacSign as any,
-      forecast_date: f.forecastDate,
-      source: f.source as unknown as ForecastSource,
-      generated_at: f.generatedAt,
-      love: f.love,
-      money: f.money,
-      mood: f.mood,
-      advice: f.advice,
-      affirmation: f.affirmation,
-      compatibility: f.compatibility as unknown as CompatibilityData,
-      lucky_metrics: f.luckyMetrics as unknown as LuckyMetricsData,
-      tomorrow_insight: f.tomorrowInsight,
-    }));
+    /* ================= MAPPING ================= */
+    // Теперь собираем плоский объект из двух таблиц
+    const payload: IDailyForecastIncoming[] = results.map((f) => {
+      // Берем первый (и единственный) перевод из массива или пустой объект, если перевода нет
+      const t = f.translations[0] || {};
+
+      return {
+        id: f.id,
+        zodiac_sign: f.zodiacSign,
+        forecast_date: f.forecastDate,
+        
+        // Технические поля остались в основной модели
+        source: f.source,
+        generated_at: f.generatedAt,
+        lucky_metrics: f.luckyMetrics as unknown as LuckyMetricsData,
+
+        // Текстовые поля берем из translations
+        // Используем оператор объединения (|| ""), чтобы не упасть, если перевода нет
+        love: t.love || "",
+        money: t.money || "",
+        mood: t.mood || "",
+        advice: t.advice || "",
+        affirmation: t.affirmation || "",
+        tomorrow_insight: t.tomorrowInsight || "",
+        
+        // JSON внутри перевода
+        compatibility: (t.compatibility || {}) as unknown as CompatibilityData,
+      };
+    });
 
     return NextResponse.json({
       date: dateStr,
+      locale: locale, // Полезно возвращать локаль в ответе
       forecasts: payload,
     });
   } catch (err) {
@@ -89,6 +105,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       date: dateStr,
       forecasts: [],
-    });
+      error: "Internal Server Error"
+    }, { status: 500 });
   }
 }

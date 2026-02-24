@@ -1,62 +1,69 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Heart, Wallet, Smile, Lightbulb, ChevronRight } from "lucide-react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ZodiacIcons } from "./zodiac-icons"
+import { useState, useEffect } from "react";
+import { Heart, Wallet, Smile, Lightbulb, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ZodiacIcons } from "./zodiac-icons";
+import { Star } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { Link } from "@/lib/navigation";
 
 const DEMO_FORECAST = {
   sign: "leo" as const,
-  name: "Лев",
+  name: "Leo",
   blocks: [
+    { id: 1, icon: Heart, color: "from-pink-500 to-rose-500" },
     {
-      icon: Heart,
-      title: "Любовь",
-      text: "Ваша харизма на пике. Время для важных признаний.",
-      color: "from-pink-500 to-rose-500",
-    },
-    {
+      id: 2,
       icon: Wallet,
-      title: "Деньги",
-      text: "Щедрость вернётся сторицей. Инвестируйте в себя.",
       color: "from-emerald-500 to-teal-500",
     },
     {
+      id: 3,
       icon: Smile,
-      title: "Настроение",
-      text: "Солнечная энергия наполняет вас оптимизмом.",
       color: "from-amber-500 to-orange-500",
     },
     {
+      id: 4,
       icon: Lightbulb,
-      title: "Совет",
-      text: "Позвольте себе быть в центре внимания — это ваш день.",
       color: "from-indigo-500 to-purple-500",
     },
   ],
-}
+};
 
 export function DemoSection() {
-  const [activeBlock, setActiveBlock] = useState(0)
-  const [date, setDate] = useState("")
+  const [activeBlock, setActiveBlock] = useState(0);
+  const [date, setDate] = useState("");
+
+  const t = useTranslations("DemoSection");
+  const localizedBlocks = t.raw("blocks") as {
+    id: number;
+    title: string;
+    text: string;
+  }[];
 
   useEffect(() => {
-    setDate(new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" }))
+    setDate(
+      new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
+    );
     const interval = setInterval(() => {
-      setActiveBlock((prev) => (prev + 1) % DEMO_FORECAST.blocks.length)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
+      setActiveBlock((prev) => (prev + 1) % DEMO_FORECAST.blocks.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const ZodiacIcon = ZodiacIcons[DEMO_FORECAST.sign]
+  const ZodiacIcon = ZodiacIcons[DEMO_FORECAST.sign];
 
   return (
     <section className="relative py-20 px-6 bg-gradient-to-b from-transparent via-card/30 to-transparent">
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-8">
-          <h2 className="font-serif text-2xl sm:text-3xl font-medium mb-2">Пример прогноза</h2>
-          <p className="text-sm text-muted-foreground">Так выглядит ваше утреннее сообщение</p>
+          <h2 className="font-serif text-2xl sm:text-3xl font-medium mb-2">
+            {t("example")}
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            {t("your_forecast_will_look_like")}
+          </p>
         </div>
 
         {/* Phone mockup */}
@@ -80,7 +87,7 @@ export function DemoSection() {
                 </div>
                 <div>
                   <p className="font-medium text-sm">Daily Astro</p>
-                  <p className="text-xs text-muted-foreground">онлайн</p>
+                  <p className="text-xs text-muted-foreground">{t("online")}</p>
                 </div>
               </div>
 
@@ -92,7 +99,9 @@ export function DemoSection() {
                       <ZodiacIcon />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{DEMO_FORECAST.name}</p>
+                      <p className="font-medium text-sm">
+                        {DEMO_FORECAST.name}
+                      </p>
                       <p className="text-xs text-muted-foreground">{date}</p>
                     </div>
                   </div>
@@ -101,7 +110,7 @@ export function DemoSection() {
                   <div className="mb-4 min-h-[80px]">
                     {DEMO_FORECAST.blocks.map((block, index) => (
                       <div
-                        key={block.title}
+                        key={block.id}
                         className={`transition-all duration-500 ${activeBlock === index ? "opacity-100 translate-y-0" : "opacity-0 absolute translate-y-2"}`}
                       >
                         {activeBlock === index && (
@@ -112,9 +121,19 @@ export function DemoSection() {
                               >
                                 <block.icon className="w-3.5 h-3.5 text-white" />
                               </div>
-                              <span className="text-sm font-medium">{block.title}</span>
+                              <span className="text-sm font-medium">
+                                {
+                                  localizedBlocks.find((b) => b.id === block.id)
+                                    ?.title
+                                }
+                              </span>
                             </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed">{block.text}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {
+                                localizedBlocks.find((b) => b.id === block.id)
+                                  ?.text
+                              }
+                            </p>
                           </>
                         )}
                       </div>
@@ -125,7 +144,7 @@ export function DemoSection() {
                   <div className="flex gap-2">
                     {DEMO_FORECAST.blocks.map((block, index) => (
                       <button
-                        key={block.title}
+                        key={block.id}
                         onClick={() => setActiveBlock(index)}
                         className={`flex-1 py-2 rounded-lg transition-all text-xs ${
                           activeBlock === index
@@ -138,7 +157,9 @@ export function DemoSection() {
                     ))}
                   </div>
 
-                  <p className="text-[10px] text-muted-foreground mt-3 text-right">07:30</p>
+                  <p className="text-[10px] text-muted-foreground mt-3 text-right">
+                    07:30
+                  </p>
                 </div>
               </div>
             </div>
@@ -156,14 +177,12 @@ export function DemoSection() {
             asChild
           >
             <Link href="/subscribe" className="flex items-center gap-2">
-              Получить свой прогноз
+              {t("take_your_forecast")}
               <ChevronRight className="w-4 h-4" />
             </Link>
           </Button>
         </div>
       </div>
     </section>
-  )
+  );
 }
-
-import { Star } from "lucide-react"

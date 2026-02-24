@@ -50,38 +50,41 @@ services:
       BEPAID_WEBHOOK_SECRET: ${BEPAID_WEBHOOK_SECRET}
       CRON_SECRET: ${CRON_SECRET}
       TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
+      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
+      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
+      TEST_PAYMENT: ${TEST_PAYMENT}
     networks:
       - application
     depends_on:
       - db
 
-  # nginx:
-  #   image: nginx:alpine
-  #   container_name: nginx
-  #   restart: unless-stopped
-  #   ports:
-  #     - "80:80"
-  #     - "443:443"
-  #   volumes:
-  #     - ./nginx:/etc/nginx/conf.d
-  #     - ./certbot/conf:/etc/letsencrypt
-  #     - ./certbot/www:/var/www/certbot
-  #   networks:
-  #     - application
-  #   depends_on:
-  #     - nextjs-app
-  #     - pgadmin
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    networks:
+      - application
+    depends_on:
+      - nextjs-app
+      - pgadmin
 
-  # certbot:
-  #   image: certbot/certbot
-  #   container_name: certbot
-  #   volumes:
-  #     - ./certbot/conf:/etc/letsencrypt
-  #     - ./certbot/www:/var/www/certbot
-  #   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
-  #   networks:
-  #     - application
-  #   restart: unless-stopped
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - application
+    restart: unless-stopped
 
 volumes:
   postgres_data:

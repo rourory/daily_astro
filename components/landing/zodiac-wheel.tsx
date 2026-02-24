@@ -1,19 +1,13 @@
-const zodiacSigns = [
-  { name: "Овен", symbol: "♈" },
-  { name: "Телец", symbol: "♉" },
-  { name: "Близнецы", symbol: "♊" },
-  { name: "Рак", symbol: "♋" },
-  { name: "Лев", symbol: "♌" },
-  { name: "Дева", symbol: "♍" },
-  { name: "Весы", symbol: "♎" },
-  { name: "Скорпион", symbol: "♏" },
-  { name: "Стрелец", symbol: "♐" },
-  { name: "Козерог", symbol: "♑" },
-  { name: "Водолей", symbol: "♒" },
-  { name: "Рыбы", symbol: "♓" },
-]
+import { Star } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
-export function ZodiacWheel() {
+export async function ZodiacWheel() {
+  const tCommon = await getTranslations("Commmon");
+
+  const zodiacSigns = tCommon.raw("zodiac_signs") as {
+    name: string;
+    symbol: string;
+  }[];
   return (
     <div className="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto">
       {/* Outer ring */}
@@ -24,10 +18,10 @@ export function ZodiacWheel() {
 
       {/* Zodiac signs */}
       {zodiacSigns.map((sign, index) => {
-        const angle = (index * 30 - 90) * (Math.PI / 180)
-        const radius = 45
-        const x = 50 + radius * Math.cos(angle)
-        const y = 50 + radius * Math.sin(angle)
+        const angle = (index * 30 - 90) * (Math.PI / 180);
+        const radius = 45;
+        const x = 50 + radius * Math.cos(angle);
+        const y = 50 + radius * Math.sin(angle);
 
         return (
           <div
@@ -42,7 +36,7 @@ export function ZodiacWheel() {
           >
             {sign.symbol}
           </div>
-        )
+        );
       })}
 
       {/* Center */}
@@ -50,7 +44,5 @@ export function ZodiacWheel() {
         <Star className="w-8 h-8 text-primary" />
       </div>
     </div>
-  )
+  );
 }
-
-import { Star } from "lucide-react"

@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No payment to refund" }, { status: 400 })
     }
 
-    // TODO: Call bePaid refund API here
+    // TODO: Call payment providerзфньуте зкщмшвук refund API here
     // For now, just mark as refunded locally
 
     await prisma.payment.update({
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      refundedAmount: payment.amountByn / 100,
+      refundedAmount: payment.amount / 100,
     })
   } catch (error) {
     console.error("Refund error:", error)

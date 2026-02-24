@@ -1,122 +1,55 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Heart, Wallet, Smile, Lightbulb } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-const ZODIAC_SIGNS = [
-  { id: "aries", name: "Овен", symbol: "♈" },
-  { id: "taurus", name: "Телец", symbol: "♉" },
-  { id: "gemini", name: "Близнецы", symbol: "♊" },
-  { id: "cancer", name: "Рак", symbol: "♋" },
-  { id: "leo", name: "Лев", symbol: "♌" },
-  { id: "virgo", name: "Дева", symbol: "♍" },
-  { id: "libra", name: "Весы", symbol: "♎" },
-  { id: "scorpio", name: "Скорпион", symbol: "♏" },
-  { id: "sagittarius", name: "Стрелец", symbol: "♐" },
-  { id: "capricorn", name: "Козерог", symbol: "♑" },
-  { id: "aquarius", name: "Водолей", symbol: "♒" },
-  { id: "pisces", name: "Рыбы", symbol: "♓" },
-]
-
-const SAMPLE_FORECASTS: Record<string, { love: string; money: string; mood: string; advice: string }> = {
-  aries: {
-    love: "Сегодня звёзды благоприятствуют романтике. Марс в вашем знаке добавляет страсти.",
-    money: "Хороший день для финансовых переговоров. Ваша уверенность поможет убедить партнёров.",
-    mood: "Энергия бьёт ключом — направьте её в творчество или спорт.",
-    advice: "Сделайте первый шаг в важном деле — сейчас идеальный момент.",
-  },
-  taurus: {
-    love: "Венера делает вас особенно привлекательным. Время укреплять отношения.",
-    money: "Стабильность — ваш козырь. Избегайте рискованных вложений.",
-    mood: "Спокойствие и уверенность — ваши главные союзники сегодня.",
-    advice: "Побалуйте себя чем-то приятным — вы это заслужили.",
-  },
-  gemini: {
-    love: "Общение — ключ к сердцу партнёра. Ваше остроумие покоряет.",
-    money: "Удачный день для коротких сделок и переговоров.",
-    mood: "Любознательность ведёт к интересным открытиям.",
-    advice: "Запишите свои идеи — среди них есть золотые.",
-  },
-  cancer: {
-    love: "Луна усиливает интуицию в отношениях. Доверяйте чувствам.",
-    money: "Время для накоплений и планирования бюджета.",
-    mood: "Эмоциональная глубина — ваша сила сегодня.",
-    advice: "Проведите вечер в кругу близких людей.",
-  },
-  leo: {
-    love: "Ваша харизма на пике. Время для важных признаний.",
-    money: "Щедрость вернётся сторицей. Не бойтесь инвестировать в себя.",
-    mood: "Солнечная энергия наполняет вас оптимизмом.",
-    advice: "Позвольте себе быть в центре внимания — это ваш день.",
-  },
-  virgo: {
-    love: "Внимание к деталям укрепит доверие партнёра.",
-    money: "Аналитический подход принесёт прибыль.",
-    mood: "Порядок вокруг — порядок в душе.",
-    advice: "Выделите 15 минут на планирование — результат превзойдёт ожидания.",
-  },
-  libra: {
-    love: "Гармония в отношениях достигается через компромисс.",
-    money: "Партнёрские проекты принесут выгоду обеим сторонам.",
-    mood: "Стремление к красоте делает день особенным.",
-    advice: "Найдите баланс между работой и отдыхом.",
-  },
-  scorpio: {
-    love: "Глубина ваших чувств притягивает — будьте искренни.",
-    money: "Интуиция подскажет выгодную сделку.",
-    mood: "Трансформация начинается изнутри.",
-    advice: "Отпустите то, что больше не служит вам.",
-  },
-  sagittarius: {
-    love: "Оптимизм заразителен — делитесь им с партнёром.",
-    money: "Смелые идеи принесут неожиданную прибыль.",
-    mood: "Жажда приключений ведёт к интересным встречам.",
-    advice: "Расширяйте горизонты — мир полон возможностей.",
-  },
-  capricorn: {
-    love: "Надёжность — ваше главное достоинство в глазах партнёра.",
-    money: "Долгосрочные инвестиции принесут плоды.",
-    mood: "Целеустремлённость ведёт к успеху.",
-    advice: "Поставьте одну важную цель и сделайте к ней шаг.",
-  },
-  aquarius: {
-    love: "Оригинальность привлекает нестандартных партнёров.",
-    money: "Инновационные идеи могут принести прибыль.",
-    mood: "Свобода мысли открывает новые горизонты.",
-    advice: "Не бойтесь быть собой — это ваша суперсила.",
-  },
-  pisces: {
-    love: "Романтика витает в воздухе. Доверьтесь интуиции.",
-    money: "Творческий подход к финансам откроет новые источники.",
-    mood: "Мечтательность — не слабость, а дар.",
-    advice: "Уделите время творчеству — оно наполнит душу.",
-  },
-}
+import { useState } from "react";
+import { Heart, Wallet, Smile, Lightbulb } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import { ZODIAC_SIGNS } from "@/lib/types/enums";
 
 const previewBlocks = [
-  { key: "love", icon: Heart, title: "Любовь", color: "text-rose-400" },
-  { key: "money", icon: Wallet, title: "Деньги", color: "text-emerald-400" },
-  { key: "mood", icon: Smile, title: "Настроение", color: "text-amber-400" },
-  { key: "advice", icon: Lightbulb, title: "Совет", color: "text-primary" },
-]
+  { key: "love", icon: Heart, color: "text-rose-400" },
+  { key: "money", icon: Wallet, color: "text-emerald-400" },
+  { key: "mood", icon: Smile, color: "text-amber-400" },
+  { key: "advice", icon: Lightbulb, color: "text-primary" },
+];
 
 export function ForecastPreview() {
-  const [selectedSign, setSelectedSign] = useState("leo")
-  const forecast = SAMPLE_FORECASTS[selectedSign]
-  const sign = ZODIAC_SIGNS.find((s) => s.id === selectedSign)!
+  const [selectedSign, setSelectedSign] = useState("leo");
+
+  const tCommon = useTranslations("Common");
+  const localizedZodiacSigns = tCommon.raw("zodiac_signs_array") as {
+    id: string;
+    name: string;
+  }[];
+  
+  const t = useTranslations("ForecastPreview");
+  const localizedSampleForecasts = t.raw("sample_forecasts") as Record<
+    string,
+    { love: string; money: string; mood: string; advice: string }
+  >;
+  const localizedPreviewBlocks = t.raw("preview_blocks") as {
+    key: string;
+    title: string;
+  }[];
+
+  const forecast = localizedSampleForecasts[selectedSign];
+  const sign = ZODIAC_SIGNS.find((s) => s.id === selectedSign)!;
 
   const today = new Date().toLocaleDateString("ru-RU", {
     day: "numeric",
     month: "long",
-  })
+  });
 
   return (
     <section id="preview" className="py-24">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="font-serif text-3xl sm:text-4xl font-medium mb-4">Что вы получаете каждый день</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">Выберите свой знак и посмотрите пример прогноза</p>
+          <h2 className="font-serif text-3xl sm:text-4xl font-medium mb-4">
+            {t("what_you_get")}
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            {t("pick_your_sign")}
+          </p>
         </div>
 
         {/* Zodiac selector */}
@@ -133,7 +66,9 @@ export function ForecastPreview() {
               )}
             >
               <span className="mr-1">{zodiac.symbol}</span>
-              <span className="hidden sm:inline">{zodiac.name}</span>
+              <span className="hidden sm:inline">
+                {localizedZodiacSigns.find((s) => s.id === zodiac.id)?.name}
+              </span>
             </button>
           ))}
         </div>
@@ -154,7 +89,13 @@ export function ForecastPreview() {
                   <span className="text-xl">{sign.symbol}</span>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Сегодня для {sign.name}</p>
+                  <p className="text-sm font-medium">
+                    {t("today_for")}{" "}
+                    {
+                      localizedZodiacSigns.find((s) => s.id === selectedSign)
+                        ?.name
+                    }
+                  </p>
                   <p className="text-xs text-muted-foreground">{today}</p>
                 </div>
               </div>
@@ -162,10 +103,20 @@ export function ForecastPreview() {
               <div className="space-y-4">
                 {previewBlocks.map((block) => (
                   <div key={block.key} className="flex gap-3">
-                    <block.icon className={`w-5 h-5 ${block.color} shrink-0 mt-0.5`} />
+                    <block.icon
+                      className={`w-5 h-5 ${block.color} shrink-0 mt-0.5`}
+                    />
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-0.5">{block.title}</p>
-                      <p className="text-sm">{forecast[block.key as keyof typeof forecast]}</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                        {
+                          localizedPreviewBlocks.find(
+                            (b) => b.key === block.key,
+                          )?.title
+                        }
+                      </p>
+                      <p className="text-sm">
+                        {forecast[block.key as keyof typeof forecast]}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -173,23 +124,25 @@ export function ForecastPreview() {
 
               {/* Streak */}
               <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                <span>Вы читаете 7 дней подряд 🔥</span>
-                <span className="text-primary cursor-pointer hover:underline">Изменить время</span>
+                <span>{t("streak")} 🔥</span>
+                <span className="text-primary cursor-pointer hover:underline">
+                  {t("change_time")}
+                </span>
               </div>
             </div>
 
             {/* Action buttons */}
             <div className="flex gap-2 mt-3">
               <button className="flex-1 py-2 px-3 bg-muted/50 rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors">
-                Сохранить
+                {t("save")}
               </button>
               <button className="flex-1 py-2 px-3 bg-muted/50 rounded-lg text-xs text-muted-foreground hover:bg-muted transition-colors">
-                Поделиться
+                {t("share")}
               </button>
             </div>
           </div>
         </div>
       </div>
     </section>
-  )
+  );
 }

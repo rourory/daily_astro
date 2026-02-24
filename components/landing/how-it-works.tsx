@@ -1,43 +1,51 @@
 import { UserCircle, CreditCard, MessageCircle, Sparkles } from "lucide-react"
+import {getTranslations} from 'next-intl/server';
 
 const steps = [
   {
+    id: 1,
     icon: UserCircle,
-    title: "Выберите знак",
-    description: "Укажите ваш знак зодиака и дату рождения для точных прогнозов",
-    highlight: "30 секунд",
   },
   {
+    id: 2,
     icon: CreditCard,
-    title: "Подключите подписку",
-    description: "Безопасная оплата через bePaid. 7 дней бесплатно.",
-    highlight: "От 3 BYN/мес",
   },
   {
+    id: 3,
     icon: MessageCircle,
-    title: "Получайте прогнозы",
-    description: "Каждое утро в 07:30 по вашему времени — прямо в Telegram",
-    highlight: "Каждый день",
   },
 ]
 
-export function HowItWorks() {
+export async function HowItWorks() {
+  const t = await getTranslations('HowItWorks');
+
+  const localizedSteps = t.raw("steps") as Array<{
+    title: string;
+    description: string;
+    highlight: string;
+  }>;
+  
+  const stepsWithIcons = steps.map((step, index) => ({
+    ...step,
+    ...localizedSteps[index],
+  }));
+
   return (
     <section id="how-it-works" className="py-24 bg-card/50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 mb-4">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm text-primary">Просто и быстро</span>
+            <span className="text-sm text-primary">{t("simple_and_fast")}</span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-4xl font-medium mb-4">Как это работает</h2>
+          <h2 className="font-serif text-3xl sm:text-4xl font-medium mb-4">{t("how_it_works")}</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Три простых шага до ежедневных персональных прогнозов
+            {t("follow_three_simple_steps")}
           </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {steps.map((step, index) => (
+          {stepsWithIcons.map((step, index) => (
             <div key={step.title} className="relative group">
               {/* Connector line */}
               {index < steps.length - 1 && (

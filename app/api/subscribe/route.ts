@@ -1,22 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { createCheckout } from "@/lib/bepaid";
-import { v4 as uuidv4 } from "uuid";
 import {
   ZodiacSign,
-  PlanName,
   SubscriptionStatus,
-  ZODIAC_NAMES,
-} from "@/lib/types/enums";
-import { sendMessage } from "../webhooks/telegram/route";
+  Currency,
+  PaymentStatus,
+} from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
+import {
+  createYookassaPayment,
+  createYookassaSetupPayment,
+  type YookassaPaymentMetadata,
+} from "@/lib/payment/yookassa"; // Предполагаемый путь к твоему файлу с хелпером
+import { PaymentService, SubscriptionService } from "@/lib/dal/services";
 
-// Plan configuration
-const PLANS: Record<string, { name: string; price: number; dbName: PlanName }> =
-  {
-    basic: { name: "Базовый", price: 300, dbName: PlanName.basic },
-    plus: { name: "Плюс", price: 600, dbName: PlanName.plus },
-    premium: { name: "Премиум", price: 1200, dbName: PlanName.premium },
-  };
+export interface SubscribeSuccessResponse {
+  success: true;
+  subscription_id: string;
+  trial_ends_at: string; // ISO string
+  confirmation_token: string;
+  payment_id: string;
+}
+
+export interface SubscribeErrorResponse {
+  success?: false;
+  error: string;
+}
+
+export type SubscribeResponse =
+  | SubscribeSuccessResponse
+  | SubscribeErrorResponse;
+
+// Типы провайдеров (как на фронте)
+export type PaymentProviderId =
+  | "yookassa"
+  | "bepaid"
+  | "robokassa"
+  | "stripe"
+  | "paypal";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,84 +46,98 @@ export async function POST(request: NextRequest) {
       telegram_username,
       zodiac_sign,
       birth_date,
-      timezone,
-      email,
       plan_id,
+      locale = "ru",
+      timezone = "Europe/Minsk",
+      currency, // Например: "RUB"
+      paymentProvider, // Например: "yookassa"
+      amount, // Сумма в минимальных единицах (копейках)
     } = body;
 
-    // Validate required fields
-    if (!telegram_username || !zodiac_sign || !plan_id) {
+    // 1. Валидация входных данных
+    console.log(body);
+    if (
+      !telegram_username ||
+      !zodiac_sign ||
+      !plan_id ||
+      !currency ||
+      !paymentProvider
+    ) {
       return NextResponse.json(
-        { error: "Заполните обязательные поля: Telegram и знак зодиака" },
+        { error: "Заполните все обязательные поля" },
         { status: 400 },
       );
     }
 
-    const plan = PLANS[plan_id];
-    if (!plan) {
-      return NextResponse.json({ error: "Неверный тариф" }, { status: 400 });
-    }
-
-    // Validate zodiac sign
-    const zodiacSignEnum = zodiac_sign as ZodiacSign;
-    if (!Object.values(ZodiacSign).includes(zodiacSignEnum)) {
+    // 2. Валидация Enum-ов
+    const validZodiacs = Object.values(ZodiacSign) as string[];
+    if (!validZodiacs.includes(zodiac_sign)) {
       return NextResponse.json(
-        { error: "Неверный знак зодиака" },
+        { error: `Неверный знак зодиака: ${zodiac_sign}` },
         { status: 400 },
       );
     }
 
-    // Clean username - store as @username@telegram.web for linking
-    const cleanUsername = telegram_username.replace("@", "").toLowerCase();
-    const userEmail = `@${cleanUsername}@telegram.web`;
-
-    // Check if user already exists by email
-    let user = await prisma.user.findFirst({
-      where: { email: userEmail },
-    });
-
-    if (!user) {
-      // Create new user
-      user = await prisma.user.create({
-        data: {
-          email: userEmail,
-          zodiacSign: zodiacSignEnum,
-          birthDate: birth_date ? new Date(birth_date) : null,
-          timezone: timezone || "Europe/Minsk",
-          locale: "ru",
-          deliveryTime: "07:30:00",
-          isPaused: false,
-        },
-      });
-    } else {
-      // Update existing user
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          zodiacSign: zodiacSignEnum,
-          birthDate: birth_date ? new Date(birth_date) : user.birthDate,
-          timezone: timezone || user.timezone,
-        },
-      });
+    const validCurrencies = Object.values(Currency) as string[];
+    if (!validCurrencies.includes(currency)) {
+      return NextResponse.json({ error: "Неверная валюта" }, { status: 400 });
     }
 
-    // Get or create plan in database
-    let dbPlan = await prisma.plan.findUnique({
-      where: { name: plan.dbName },
+    // 3. Поиск Плана и Цены в БД
+    const dbPlan = await prisma.plan.findUnique({
+      where: { id: plan_id },
+      include: { prices: true },
     });
 
     if (!dbPlan) {
-      dbPlan = await prisma.plan.create({
-        data: {
-          name: plan.dbName,
-          priceBynMonth: plan.price,
-          features: { tier: plan_id },
-          isActive: true,
-        },
-      });
+      return NextResponse.json({ error: "Тариф не найден" }, { status: 400 });
     }
 
-    // Check for existing active subscription
+    // Ищем цену строго для выбранной валюты
+    const priceObj = dbPlan.prices.find((p) => p.currency === currency);
+
+    if (!priceObj) {
+      return NextResponse.json(
+        { error: `Цена для тарифа в валюте ${currency} не установлена` },
+        { status: 400 },
+      );
+    }
+
+    // Первичная подписка всегда бесплатна, не имеет значения
+    // // Сверка цены (безопасность)
+    // if (priceObj.amount !== amount) {
+
+    //   return NextResponse.json(
+    //     { error: "Цена тарифа изменилась, попробуйте обновить страницу." },
+    //     { status: 409 },
+    //   );
+    // }
+
+    // 4. Работа с Пользователем (Upsert)
+    const cleanUsername = telegram_username.replace("@", "").toLowerCase();
+    const userEmail = `@${cleanUsername}@telegram.web`; // Временная генерация email
+
+    const user = await prisma.user.upsert({
+      where: { email: userEmail }, // Лучше искать по telegramId если он есть, но тут логика через email/username
+      update: {
+        zodiacSign: zodiac_sign as ZodiacSign,
+        birthDate: birth_date ? new Date(birth_date) : undefined,
+        timezone: timezone,
+        locale: locale,
+        countryCode: locale === "ru" ? "RU" : "US", // Упрощенная логика, в идеале определять по IP
+      },
+      create: {
+        email: userEmail,
+        zodiacSign: zodiac_sign as ZodiacSign,
+        birthDate: birth_date ? new Date(birth_date) : null,
+        timezone: timezone,
+        locale: locale,
+        deliveryTime: "07:30:00",
+        isPaused: false,
+      },
+    });
+
+    // 5. Проверка активных подписок (чтобы не дублировать)
     const existingSub = await prisma.subscription.findFirst({
       where: {
         userId: user.id,
@@ -118,105 +153,136 @@ export async function POST(request: NextRequest) {
 
     if (existingSub) {
       return NextResponse.json(
-        {
-          error:
-            "У вас уже есть активная подписка. Напишите боту @Dailyastrobelarusbot для управления",
-        },
+        { error: "У вас уже есть активная подписка." },
         { status: 400 },
       );
     }
 
-    // Create subscription with trial
+    // 6. Подготовка данных для создания подписки и платежа
     const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7 дней триала
+
+    const orderId = uuidv4(); // Уникальный ID заказа для нашей системы
+
+    // 7. Создаем Подписку и Платеж в транзакции (или последовательно)
+    // Создаем подписку со статусом TRIAL (но она ждет привязки карты через платеж)
 
     const subscription = await prisma.subscription.create({
       data: {
         userId: user.id,
         planId: dbPlan.id,
-        status: SubscriptionStatus.trial,
-        trialEndsAt,
-        renewAt: trialEndsAt,
-        paymentProvider: "bepaid",
+        status: SubscriptionStatus.trial, // Ставим trial, ожидая успешного платежа для привязки карты
+        currency: priceObj.currency,
+        priceAmount: priceObj.amount,
+        trialEndsAt: trialEndsAt,
+        renewAt: trialEndsAt, // Первое списание произойдет в конце триала
+        paymentProvider: paymentProvider,
       },
     });
-    if (user.telegramId) {
-      await sendMessage(
-        Number(user.telegramId),
-        `Пробный семидневный период активирован до ${trialEndsAt.toISOString().slice(0, 10)}! После оплаты вам будет доступна полноценная подписка\n\nВаш знак: ${ZODIAC_NAMES[user.zodiacSign as ZodiacSign]}.`,
-        {
-          reply_markup: {
-            inline_keyboard: [
-              // [
-              //   {
-              //     text: "Получить прогноз на сегодня",
-              //     callback_data: "get_forecast",
-              //   },
-              // ],
-              [{ text: "Настройки", callback_data: "settings" }],
-            ],
-          },
+
+    // Создаем запись о платеже (Pending)
+
+    const paymentRecord = await prisma.payment.create({
+      data: {
+        userId: user.id,
+        subscriptionId: subscription.id,
+        orderId: orderId,
+        amount: priceObj.amount,
+        currency: priceObj.currency,
+        status: PaymentStatus.pending,
+        isRecurring: true,
+        metadata: {
+          plan_name: dbPlan.name,
+          provider: paymentProvider,
         },
-      );
-    }
-    // Try to create checkout for payment after trial
-    const orderId = uuidv4();
+      },
+    });
 
-    try {
-      const checkout = await createCheckout({
-        orderId,
-        amount: plan.price,
-        description: `Daily Astro — ${plan.name} (месяц)`,
-        email: email || undefined,
-        telegramId: cleanUsername,
-        returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/return?subscription=${subscription.id}`,
-        notifyUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/bepaid`,
-        recurring: true,
-      });
+    // 8. Инициализация платежа во внешнем сервисе
+    let paymentData;
 
-      // Save pending payment
-      await prisma.payment.create({
-        data: {
-          userId: user.id,
+    switch (paymentProvider as PaymentProviderId) {
+      case "yookassa":
+        // Конвертируем копейки в рубли (100 -> 1.00)
+        const yookassaAmount = 0.0;
+
+        // Метаданные для вебхука (чтобы понять, какую подписку обновлять)
+        const metadata: YookassaPaymentMetadata = {
           subscriptionId: subscription.id,
-          orderId,
-          amountByn: plan.price,
-          currency: "BYN",
-          status: "pending",
-          isRecurring: true,
-        },
-      });
+          isRecurring: "true",
+          email: user.email || undefined,
+        };
 
-      return NextResponse.json({
-        success: true,
-        user_id: user.id,
-        subscription_id: subscription.id,
-        checkout_url: checkout.checkout.redirect_url,
-        trial_ends_at: trialEndsAt.toISOString(),
-        message:
-          "Подписка создана. После оплаты напишите боту @Dailyastrobelarusbot",
-      });
-    } catch (checkoutError) {
-      // If bePaid is not configured, still create trial
-      console.error(
-        "Checkout error (bePaid may not be configured):",
-        checkoutError,
-      );
+        try {
+          // Вызываем хелпер
+          // Важно: description должен быть понятным пользователю
+          const description = `Привязка карты для подписки ${dbPlan.name} (7 дней бесплатно, далее ${priceObj.amount / 100} ${priceObj.currency})`;
 
-      return NextResponse.json({
-        success: true,
-        user_id: user.id,
-        subscription_id: subscription.id,
-        trial_ends_at: trialEndsAt.toISOString(),
-        message:
-          "Пробный период активирован! Напишите боту @Dailyastrobelarusbot для получения прогнозов",
-        checkout_url: null,
-      });
+          const yookassaResponse = await createYookassaSetupPayment(
+            description,
+            metadata,
+            "embedded",
+          );
+          console.log("Yookassa setup payment response:", yookassaResponse);
+          // Сохраняем ID платежа от провайдера
+          await prisma.payment.update({
+            where: { id: paymentRecord.id },
+            data: {
+              providerPaymentId: yookassaResponse.id,
+              metadata: {
+                ...(paymentRecord.metadata as object),
+                yookassa_response: yookassaResponse as any,
+              },
+            },
+          });
+
+          paymentData = {
+            confirmation_token:
+              yookassaResponse.confirmation.confirmation_token!,
+            payment_id: yookassaResponse.id,
+          };
+        } catch (e: any) {
+          console.error("Yookassa creation failed", e);
+          // Откатываем создание подписки/платежа в случае ошибки API (опционально)
+          await prisma.payment.update({
+            where: { id: paymentRecord.id },
+            data: {
+              status: PaymentStatus.failed,
+              metadata: { error: e.message },
+            },
+          });
+          throw new Error("Ошибка создания платежа в ЮKassa: " + e.message);
+        }
+        break;
+
+      case "bepaid":
+      case "robokassa":
+      case "stripe":
+      case "paypal":
+        // Заглушка для других методов
+        return NextResponse.json(
+          { error: `Провайдер ${paymentProvider} временно недоступен` },
+          { status: 501 },
+        );
+
+      default:
+        return NextResponse.json(
+          { error: "Неизвестный платежный провайдер" },
+          { status: 400 },
+        );
     }
-  } catch (error) {
-    console.error("Subscribe error:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Ошибка сервера" },
+
+    // 9. Возвращаем данные на фронт
+    return NextResponse.json<SubscribeSuccessResponse>({
+      success: true,
+      subscription_id: subscription.id,
+      trial_ends_at: trialEndsAt.toISOString(),
+      ...paymentData, // confirmation_token, payment_id
+    });
+  } catch (error: any) {
+    console.error("Subscribe API error:", error);
+    return NextResponse.json<SubscribeErrorResponse>(
+      { error: error.message || "Internal server error" },
       { status: 500 },
     );
   }

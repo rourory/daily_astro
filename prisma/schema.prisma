@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------- ENUMS ----------------
+
 enum ZodiacSign {
   aries
   taurus
@@ -28,6 +30,7 @@ enum SubscriptionStatus {
   canceled
   expired
   grace
+  paused // Добавил статус для явной паузы подписки
 }
 
 enum PaymentStatus {
@@ -35,6 +38,7 @@ enum PaymentStatus {
   succeeded
   failed
   refunded
+  canceled // Добавил, если пользователь отменил на форме оплаты
 }
 
 enum PlanName {
@@ -43,18 +47,37 @@ enum PlanName {
   premium
 }
 
+// Добавил Enum для валют, чтобы не хранить произвольные строки
+enum Currency {
+  BYN
+  RUB
+  USD
+  CNY
+  KZT
+}
+
+// ---------------- MODELS ----------------
+
 model User {
-  id           String     @id @default(uuid())
-  telegramId   BigInt?    @unique @map("telegram_id")
-  email        String?
+  id           String      @id @default(uuid())
+  telegramId   BigInt?     @unique @map("telegram_id")
+  email        String?     @unique
   zodiacSign   ZodiacSign? @map("zodiac_sign")
-  birthDate    DateTime?  @map("birth_date") @db.Date
-  timezone     String     @default("Europe/Minsk")
-  locale       String     @default("ru")
-  deliveryTime String     @default("07:30:00") @map("delivery_time")
-  isPaused     Boolean    @default(false) @map("is_paused")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  birthDate    DateTime?   @map("birth_date") @db.Date
+  
+  timezone     String      @default("Europe/Minsk")
+  
+  // Локаль: 'ru', 'en', 'es', 'zh'
+  locale       String      @default("ru") 
+  
+  // Страна (ISO 3166-1 alpha-2): 'BY', 'RU', 'US', 'CN'. 
+  // Важно для выбора платежного шлюза.
+  countryCode  String?     @map("country_code") @db.Char(2)
+
+  deliveryTime String      @default("07:00:00") @map("delivery_time")
+  isPaused     Boolean     @default(false) @map("is_paused")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
 
   subscriptions    Subscription[]
   payments         Payment[]
@@ -69,28 +92,61 @@ model User {
 model Plan {
   id            String   @id @default(uuid())
   name          PlanName @unique
-  priceBynMonth Int      @map("price_byn_month")
-  features      Json     @default("{}")
-  isActive      Boolean  @default(true) @map("is_active")
+  
   createdAt     DateTime @default(now()) @map("created_at")
 
+  prices           PlanPrice[] // Связь с ценами
   subscriptions    Subscription[]
   giftSubscriptions GiftSubscription[]
 
   @@map("plans")
 }
 
+// НОВАЯ МОДЕЛЬ: Цены для разных регионов/валют
+model PlanPrice {
+  id        String   @id @default(uuid())
+  planId    String   @map("plan_id")
+  currency  Currency // USD, EUR, RUB, etc.
+  
+  // Сумма в МИНИМАЛЬНЫХ единицах валюты (центы, копейки).
+  // Например, $10.00 храним как 1000.
+  amount    Int      
+  locale      String   @default("ru") 
+  
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, currency]) // У плана может быть только одна цена в конкретной валюте
+  @@map("plan_prices")
+}
+
 model Subscription {
   id              String             @id @default(uuid())
   userId          String             @map("user_id")
   planId          String             @map("plan_id")
+  
   status          SubscriptionStatus @default(trial)
+  
+  // Важно: какую валюту/цену зафиксировали при подписке
+  currency        Currency           @default(BYN) 
+  priceAmount     Int                @map("price_amount") // Цена продления (в копейках/центах)
+
   trialEndsAt     DateTime?          @map("trial_ends_at")
   startAt         DateTime           @default(now()) @map("start_at")
   renewAt         DateTime?          @map("renew_at")
   canceledAt      DateTime?          @map("canceled_at")
+  
+  // Провайдеры теперь будут разные: 'yookassa', 'stripe', 'alipay', 'bepaid'
   paymentProvider String             @default("bepaid") @map("payment_provider")
-  paymentToken    String?            @map("payment_token")
+  
+  // Token рекуррентного платежа (payment_method_id в Stripe, saved_card_id в Yookassa)
+  paymentToken    String?            @map("payment_token") 
+  
+  // ID подписки на стороне шлюза (актуально для Stripe Subscriptions)
+  externalSubId   String?            @map("external_sub_id")
+
   lastPaymentId   String?            @map("last_payment_id")
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
@@ -109,17 +165,26 @@ model Payment {
   id                String        @id @default(uuid())
   userId            String        @map("user_id")
   subscriptionId    String?       @map("subscription_id")
-  providerPaymentId String?       @map("provider_payment_id")
+  
+  // ID транзакции на стороне платежной системы
+  providerPaymentId String?       @map("provider_payment_id") 
+  
+  // Уникальный ID заказа в нашей системе
   orderId           String        @unique @map("order_id")
-  amountByn         Int           @map("amount_byn")
-  currency          String        @default("BYN")
+  
+  // Деньги: отвязываем от BYN
+  amount            Int           // В копейках/центах
+  currency          Currency      @default(BYN)
+  
   status            PaymentStatus @default(pending)
   isRecurring       Boolean       @default(false) @map("is_recurring")
+  
+  // Метаданные (IP пользователя, UserAgent, ошибки от шлюза)
   metadata          Json          @default("{}")
   createdAt         DateTime      @default(now()) @map("created_at")
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription     Subscription?     @relation(fields: [subscriptionId], references: [id])
   giftSubscription GiftSubscription?
 
   @@index([orderId])
@@ -135,63 +200,95 @@ model AstroEvent {
   sign        ZodiacSign?
   aspect      String?
   magnitude   Float?
-  source      String?
-  description String?
+  source      String?    // Техническое поле источника данных
+  
+  // Описание может быть на разных языках, поэтому лучше JSONB 
+  // или отдельная таблица. Для событий часто хватает JSONB: {"ru": "...", "en": "..."}
+  description Json?      
+  
   createdAt   DateTime   @default(now()) @map("created_at")
 
   @@index([eventDate])
   @@map("astro_events")
 }
 
+// ИЗМЕНЕНО: Forecast теперь содержит только "скелет" данных. Тексты вынесены.
 model Forecast {
   id           String     @id @default(uuid())
   forecastDate DateTime   @map("forecast_date") @db.Date
   zodiacSign   ZodiacSign @map("zodiac_sign")
 
-  // --- BASIC PLAN ---
-  love   String @db.Text
-  money  String @db.Text
-  mood   String @db.Text
-  advice String @db.Text
-
-  // --- PLUS PLAN ---
-  // Добавили @default(""), чтобы старые записи получили пустую строку
-  affirmation String @default("") @db.Text
+  // Технические метрики (языконезависимые) могут остаться здесь
+  luckyMetrics Json       @default("{}") @map("lucky_metrics")
   
-  // Добавили @default("{}"), чтобы старые записи получили пустой JSON
-  compatibility Json @default("{}")
+  // Источник генерации
+  source       Json       @default("{}")
+  generatedAt  DateTime   @default(now()) @map("generated_at")
 
-  // --- PREMIUM PLAN ---
-  // Добавили @default("{}")
-  luckyMetrics Json @default("{}") @map("lucky_metrics")
-  
-  // Добавили @default("")
-  tomorrowInsight String @default("") @map("tomorrow_insight") @db.Text
-
-  // Техническое поле
-  source      Json     @default("{}")
-  generatedAt DateTime @default(now()) @map("generated_at")
-
-  deliveries Delivery[]
+  translations ForecastTranslation[] // Связь с текстами на разных языках
+  deliveries   Delivery[]
 
   @@unique([forecastDate, zodiacSign])
   @@index([forecastDate, zodiacSign])
   @@map("forecasts")
 }
 
+// НОВАЯ МОДЕЛЬ: Локализованные тексты прогнозов
+model ForecastTranslation {
+  id          String   @id @default(uuid())
+  forecastId  String   @map("forecast_id")
+  locale      String   @default("ru") // "ru", "en", "de"
+
+  // --- BASIC PLAN TEXTS ---
+  love        String   @db.Text
+  money       String   @db.Text
+  mood        String   @db.Text
+  advice      String   @db.Text
+
+  // --- PLUS PLAN TEXTS ---
+  affirmation String   @default("") @db.Text
+  compatibility Json   @default("{}") // Текст внутри JSON тоже должен быть локализован
+
+  // --- PREMIUM PLAN TEXTS ---
+  tomorrowInsight String @default("") @map("tomorrow_insight") @db.Text
+
+  forecast    Forecast @relation(fields: [forecastId], references: [id], onDelete: Cascade)
+
+  @@unique([forecastId, locale]) // Один язык на один прогноз
+  @@map("forecast_translations")
+}
+
+// ИЗМЕНЕНО: Шаблоны уведомлений теперь мультиязычные
 model ContentTemplate {
   id           String     @id @default(uuid())
   zodiacSign   ZodiacSign? @map("zodiac_sign")
-  triggerType  String     @map("trigger_type")
+  triggerType  String     @map("trigger_type") // e.g. "payment_success", "daily_digest"
   triggerValue String     @map("trigger_value")
   category     String
-  textRu       String     @map("text_ru")
+  
+  // Убрали textRu.
+  
   weight       Int        @default(1)
   isActive     Boolean    @default(true) @map("is_active")
   createdAt    DateTime   @default(now()) @map("created_at")
 
+  translations ContentTemplateTranslation[]
+
   @@index([triggerType, triggerValue])
   @@map("content_templates")
+}
+
+// НОВАЯ МОДЕЛЬ: Переводы шаблонов
+model ContentTemplateTranslation {
+  id         String          @id @default(uuid())
+  templateId String          @map("template_id")
+  locale     String          @default("ru")
+  text       String          @db.Text // Сам текст сообщения
+
+  template   ContentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, locale])
+  @@map("content_template_translations")
 }
 
 model Delivery {
@@ -202,7 +299,11 @@ model Delivery {
   telegramMessageId String?  @map("telegram_message_id")
   opened            Boolean  @default(false)
   streakCount       Int      @default(1) @map("streak_count")
-  planSnapshot      Json     @default("{}") @map("plan_snapshot")
+  
+  // Здесь полезно хранить снапшот того, что реально ушло юзеру 
+  // (чтобы при разборе полетов видеть текст на нужном языке)
+  sentContentSnapshot Json     @default("{}") @map("sent_content_snapshot")
+  
   deliveredAt       DateTime? @map("delivered_at")
   createdAt         DateTime @default(now()) @map("created_at")
 
@@ -244,6 +345,7 @@ model GiftSubscription {
   @@map("gift_subscriptions")
 }
 
+// Логи можно оставить без изменений
 enum LogLevel {
   INFO
   WARN
