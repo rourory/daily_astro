@@ -2,12 +2,12 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { SubscribeContent } from "@/components/landing/subscribe-content";
 
-export default function SubscribePage({
+export default async function SubscribePage({
   searchParams,
 }: {
-  searchParams: { telegramId?: string };
+  searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const telegramId = searchParams.telegramId;
+  const telegramId = (await searchParams).telegramId;
   return (
     <Suspense
       fallback={
