@@ -1,13 +1,19 @@
 import { Translations } from "@/lib/types/webhook/telegram";
-import { DEFAULT_LOCALE, POPULAR_TIMEZONES, SUPPORTED_LOCALES } from "./constants";
-
+import {
+  DEFAULT_LOCALE,
+  POPULAR_TIMEZONES,
+  SUPPORTED_LOCALES,
+} from "./constants";
 
 export function getLanguageKeyboard() {
-  const buttons = SUPPORTED_LOCALES.map((l) => ({
-    text: l.label,
-    callback_data: `lang_${l.code}`,
-  }));
-  return { inline_keyboard: [buttons] }; // В один ряд
+  const buttons = SUPPORTED_LOCALES.map((l) => [
+    {
+      text: l.label,
+      callback_data: `lang_${l.code}`,
+    },
+  ]);
+
+  return { inline_keyboard: buttons };
 }
 
 export function getTimezoneKeyboard() {
@@ -32,16 +38,14 @@ export async function getMessages(locale: string): Promise<Translations> {
   try {
     // ВАЖНО: Убедитесь, что путь правильный относительно папки app/api/forecasts/webhook
     // Если файлы лежат в корне проекта в /messages:
-    const messages = (await import(`../../../messages/${locale}.json`))
-      .default;
+    const messages = (await import(`../../../messages/${locale}.json`)).default;
     return messages;
   } catch (error) {
     console.warn(
       `Locale ${locale} not found, falling back to ${DEFAULT_LOCALE}`,
     );
     try {
-      return (await import(`../../../messages/${DEFAULT_LOCALE}.json`))
-        .default;
+      return (await import(`../../../messages/${DEFAULT_LOCALE}.json`)).default;
     } catch (e) {
       console.error("CRITICAL: No translation files found");
       // Возвращаем пустую заглушку, чтобы код не падал совсем

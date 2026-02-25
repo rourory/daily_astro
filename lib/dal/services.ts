@@ -201,6 +201,13 @@ export const SubscriptionService = {
     });
   },
 
+  async findPendingByUser(userId: string) {
+    return prisma.subscription.findFirst({
+      where: { userId, status: SubscriptionStatus.pending },
+      orderBy: { createdAt: "desc" },
+    });
+  },
+
   async update(id: string, data: Prisma.SubscriptionUpdateInput) {
     return prisma.subscription.update({
       where: { id },
@@ -285,6 +292,13 @@ export const PaymentService = {
 
   async findByOrderId(orderId: string) {
     return prisma.payment.findUnique({ where: { orderId } });
+  },
+
+  async findBySubscriptionId(subscriptionId: string) {
+    return prisma.payment.findMany({
+      where: { subscriptionId },
+      orderBy: { createdAt: "desc" },
+    });
   },
 
   async update(id: string, data: Prisma.PaymentUpdateInput) {

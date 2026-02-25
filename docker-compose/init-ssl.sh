@@ -1,31 +1,100 @@
 #!/bin/bash
 
 # --- НАСТРОЙКИ ---
-domains=(dailyastro.site) 
+domains=(dailyastro.site)
 email="rourory@yandex.com"
 # -----------------
 
 rsa_key_size=4096
 data_path="./certbot"
 nginx_path="./nginx"
-domain=${domains[0]} 
+domain=${domains[0]}
 
-if ! [ -x "$(command -v docker compose)" ]; then
+if ! docker compose version >/dev/null 2>&1; then
   echo 'Error: docker compose is not installed.' >&2
   exit 1
 fi
 
+echo "### Остановка контейнеров..."
+docker compose down
+
 echo "### Очистка старых конфигураций..."
-sudo rm -rf "$nginx_path/default.conf"
-# Для чистого старта удаляем старые сертификаты, если скрипт ранее падал
+# Удаляем старые сертификаты, чтобы начать с чистого листа
 sudo rm -rf "$data_path/conf/live"
 sudo rm -rf "$data_path/conf/archive"
 sudo rm -rf "$data_path/conf/renewal"
 
 mkdir -p "$nginx_path"
 mkdir -p "$data_path/conf/live/$domain"
+mkdir -p "$data_path/www"
 
-echo "### Создание конфигурации Nginx..."
+echo "### Скачивание параметров TLS ..."
+mkdir -p "$data_path/conf"
+curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
+curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > "$data_path/conf/ssl-dhparams.pem"
+
+# ----------------------------------------------------------------
+# ШАГ 1: Создаем конфиг ТОЛЬКО для HTTP (Port 80)
+# Это нужно, чтобы Nginx запустился и Certbot мог проверить домен
+# ----------------------------------------------------------------
+echo "### Создание временной конфигурации Nginx (HTTP only)..."
+cat > "$nginx_path/default.conf" << EOF
+upstream nextjs_upstream {
+    server nextjs-app:3000;
+}
+upstream pgadmin_upstream {
+    server pgadmin:80;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $domain www.$domain;
+    server_tokens off;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://\$host\$request_uri;
+    }
+}
+EOF
+
+echo "### Запуск Nginx ..."
+docker compose up -d nextjs-app nginx
+
+echo "### Ожидание запуска Nginx..."
+sleep 10
+
+# ----------------------------------------------------------------
+# ШАГ 2: Запрашиваем сертификат
+# ----------------------------------------------------------------
+echo "### Запрос реального сертификата Let's Encrypt ..."
+domain_args=""
+for d in "${domains[@]}"; do
+  domain_args="$domain_args -d $d"
+done
+
+case "$email" in
+  "") email_arg="--register-unsafely-without-email" ;;
+  *) email_arg="-m $email" ;;
+esac
+
+docker compose run --rm --entrypoint "\
+  certbot certonly --webroot -w /var/www/certbot \
+    $email_arg \
+    $domain_args \
+    --rsa-key-size $rsa_key_size \
+    --agree-tos \
+    --force-renewal" certbot
+
+# ----------------------------------------------------------------
+# ШАГ 3: Создаем ПОЛНЫЙ конфиг (HTTP + HTTPS)
+# Теперь сертификаты есть, можно включать SSL
+# ----------------------------------------------------------------
+echo "### Создание боевой конфигурации Nginx (с SSL)..."
 cat > "$nginx_path/default.conf" << EOF
 upstream nextjs_upstream {
     server nextjs-app:3000;
@@ -80,50 +149,7 @@ server {
 }
 EOF
 
-echo "### Скачивание параметров TLS ..."
-mkdir -p "$data_path/conf"
-curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > "$data_path/conf/options-ssl-nginx.conf"
-curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > "$data_path/conf/ssl-dhparams.pem"
-
-echo "### Создание ВРЕМЕННОГО самоподписанного сертификата ..."
-path="/etc/letsencrypt/live/$domain"
-mkdir -p "$data_path/conf/live/$domain"
-
-docker compose run --rm --entrypoint "\
-  openssl req -x509 -nodes -newkey rsa:$rsa_key_size -days 1\
-    -keyout '$path/privkey.pem' \
-    -out '$path/fullchain.pem' \
-    -subj '/CN=localhost'" certbot
-
-echo "### Запуск Nginx ..."
-docker compose up --force-recreate -d nextjs-app nginx
-
-echo "### Удаление временного сертификата ..."
-# ИСПРАВЛЕНИЕ: Удаляем всю папку, чтобы Certbot создал правильные симлинки
-sudo rm -rf "$data_path/conf/live/$domain"
-sudo rm -rf "$data_path/conf/archive/$domain"
-sudo rm -rf "$data_path/conf/renewal/$domain.conf"
-
-echo "### Запрос реального сертификата Let's Encrypt ..."
-domain_args=""
-for d in "${domains[@]}"; do
-  domain_args="$domain_args -d $d"
-done
-
-case "$email" in
-  "") email_arg="--register-unsafely-without-email" ;;
-  *) email_arg="-m $email" ;;
-esac
-
-docker compose run --rm --entrypoint "\
-  certbot certonly --webroot -w /var/www/certbot \
-    $email_arg \
-    $domain_args \
-    --rsa-key-size $rsa_key_size \
-    --agree-tos \
-    --force-renewal" certbot
-
-echo "### Перезагрузка Nginx ..."
+echo "### Перезагрузка Nginx для применения SSL ..."
 docker compose exec nginx nginx -s reload
 
 echo "### Готово! Проверяйте https://$domain"

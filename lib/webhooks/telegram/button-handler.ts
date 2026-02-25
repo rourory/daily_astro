@@ -4,7 +4,7 @@ import {
   userInclude,
   UserWithPlan,
 } from "@/lib/types/webhook/telegram";
-import { SubscriptionStatus } from "@prisma/client";
+import { PaymentStatus, SubscriptionStatus } from "@prisma/client";
 import { answerCallback } from "./answer-callback";
 import {
   handleZodiacSelection,
@@ -22,6 +22,12 @@ import {
   handleTimezonePrompt,
   handleTimezoneUpdate,
 } from "./timezone-handlers";
+import {
+  PaymentService,
+  PlanService,
+  SubscriptionService,
+} from "@/lib/dal/services";
+import { createAutoPayment } from "@/lib/payment/yookassa";
 
 export async function handleButton(
   data: string, // data обычно string, а не any
@@ -115,8 +121,43 @@ export async function handleButton(
         ? new Date(sub.renewAt).toLocaleDateString(user.locale)
         : "...";
       await sendMessage(chatId, t.Bot.sub_canceled.replace("{date}", date));
-    } else {
-      await sendMessage(chatId, t.Bot.no_sub);
     }
+  } else if (data === "confirm_payment") {
+    const pendingSub = await SubscriptionService.findPendingByUser(user.id);
+    if (pendingSub && pendingSub.paymentToken) {
+      const pendingPayment = (
+        await PaymentService.findBySubscriptionId(pendingSub.id)
+      )[0];
+      const plan = await PlanService.findById(pendingSub.planId);
+
+      switch (pendingSub.paymentProvider) {
+        case "yookassa":
+          const response = await createAutoPayment(
+            pendingSub.priceAmount / 100,
+            pendingSub.paymentToken,
+            `Возобновление подписки ${plan?.name}`,
+            {
+              subscriptionId: pendingSub.id,
+              userId: pendingSub.userId,
+              isRecurring: "true",
+            },
+          );
+          if (response.paid) {
+            await SubscriptionService.update(pendingSub.id, {
+              status: SubscriptionStatus.active,
+              renewAt: new Date(new Date().setMonth(new Date().getMonth() + 1)),
+            });
+            await PaymentService.update(pendingPayment.id, {
+              status: PaymentStatus.succeeded,
+            });
+            await sendMessage(chatId, t.Bot.success);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  } else {
+    await sendMessage(chatId, t.Bot.no_sub);
   }
 }

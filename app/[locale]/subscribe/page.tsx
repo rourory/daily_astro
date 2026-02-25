@@ -1,10 +1,13 @@
 import { Suspense } from "react";
-import {
-  Loader2,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { SubscribeContent } from "@/components/landing/subscribe-content";
 
-export default function SubscribePage() {
+export default function SubscribePage({
+  searchParams,
+}: {
+  searchParams: { telegramId?: string };
+}) {
+  const telegramId = searchParams.telegramId;
   return (
     <Suspense
       fallback={
@@ -13,7 +16,7 @@ export default function SubscribePage() {
         </main>
       }
     >
-      <SubscribeContent />
+      <SubscribeContent telegramId={telegramId} />
     </Suspense>
   );
 }

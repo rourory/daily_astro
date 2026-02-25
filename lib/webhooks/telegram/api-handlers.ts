@@ -135,11 +135,11 @@ export async function handleSettings(
     userTimeStr = "??:??";
   }
 
-  const text =
-    t.Bot.settings_header
-      .replace("{sign}", signName)
-      .replace("{time}", time)
-      .replace("{status}", status) + `\nВремя у вас: <b>${userTimeStr}</b>`;
+  const text = t.Bot.settings_header
+    .replace("{sign}", signName)
+    .replace("{time}", time)
+    .replace("{status}", status)
+    .replace("{userTimeStr}", userTimeStr); // Добавляем в шаблон
 
   const pauseBtnText = user.isPaused ? t.Bot.resume_btn : t.Bot.pause_btn;
 
@@ -161,9 +161,16 @@ export async function handleSettings(
 
     // Ряд 4: Пауза
     [{ text: pauseBtnText, callback_data: "toggle_pause" }],
-
-    // Ряд 5: Отмена подписки
-    [{ text: t.Bot.cancel_sub_btn, callback_data: "cancel_sub" }],
+    user.subscriptions[0].status === SubscriptionStatus.active ||
+    user.subscriptions[0].status === SubscriptionStatus.trial
+      ? // Ряд 5: Отмена подписки
+        [{ text: t.Bot.cancel_sub_btn, callback_data: "cancel_sub" }]
+      : [
+          {
+            text: t.Bot.subscribe_btn,
+            url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe?telegramId=${user.telegramId}`,
+          },
+        ],
   ];
 
   // Убираем null/undefined/пустые массивы, чтобы структура осталась Array<Array<Button>>
@@ -221,7 +228,7 @@ export async function handleTimeSelectionPrompt(
 
   // Проверяем, есть ли подписка Premium
   const isPremium =
-    sub?.status === SubscriptionStatus.active &&
+    sub?.status === (SubscriptionStatus.active || SubscriptionStatus.trial) &&
     sub.plan.name === PlanName.premium;
 
   // Если это админ/тест или Premium — разрешаем (можно убрать true для строгого режима)
@@ -233,15 +240,7 @@ export async function handleTimeSelectionPrompt(
     // Если нет премиума — предлагаем купить
     await sendMessage(chatId, t.Bot.premium_only, {
       reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: t.Bot.upgrade_btn,
-              url: `${process.env.NEXT_PUBLIC_APP_URL}/upgrade?telegramId=${user.telegramId}`,
-            },
-          ],
-          [{ text: t.Bot.no_back, callback_data: "settings" }],
-        ],
+        inline_keyboard: [[{ text: t.Bot.no_back, callback_data: "settings" }]],
       },
     });
   }

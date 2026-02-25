@@ -31,6 +31,7 @@ export const SubscriptionStatus = {
   canceled: "canceled",
   expired: "expired",
   grace: "grace",
+  pending: "pending",
 } as const;
 
 export type SubscriptionStatus =

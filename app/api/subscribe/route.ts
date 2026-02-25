@@ -8,11 +8,19 @@ import {
 } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import {
+  createAutoPayment,
   createYookassaPayment,
   createYookassaSetupPayment,
   type YookassaPaymentMetadata,
 } from "@/lib/payment/yookassa"; // Предполагаемый путь к твоему файлу с хелпером
-import { PaymentService, SubscriptionService } from "@/lib/dal/services";
+import {
+  PaymentService,
+  PlanService,
+  SubscriptionService,
+  UserService,
+} from "@/lib/dal/services";
+import { sendMessage } from "@/lib/webhooks/telegram/send-message";
+import { getMessages } from "@/lib/webhooks/telegram/localization-helpers";
 
 export interface SubscribeSuccessResponse {
   success: true;
@@ -52,10 +60,11 @@ export async function POST(request: NextRequest) {
       currency, // Например: "RUB"
       paymentProvider, // Например: "yookassa"
       amount, // Сумма в минимальных единицах (копейках)
+      telegramId, // Новый параметр для связи с пользователем в Telegram
     } = body;
 
     // 1. Валидация входных данных
-    console.log(body);
+
     if (
       !telegram_username ||
       !zodiac_sign ||
@@ -103,6 +112,105 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    //Если есть telegramId, значит пользователь был в системе
+    if (telegramId) {
+      const user = await UserService.findByTelegramId(telegramId);
+      if (!user) {
+        return NextResponse.json(
+          { error: "Пользователь с таким Telegram ID не найден" },
+          { status: 400 },
+        );
+      }
+      const t = await getMessages(user.locale || "ru");
+      const subs = await SubscriptionService.findByUser(user.id);
+      if (
+        subs &&
+        subs.length > 0 &&
+        subs[0].status === SubscriptionStatus.active
+      ) {
+        return NextResponse.json(
+          { error: "У вас уже есть активная подписка." },
+          { status: 400 },
+        );
+      } else if (
+        subs &&
+        subs.length > 0 &&
+        subs[0].status === SubscriptionStatus.trial
+      ) {
+        return NextResponse.json(
+          { error: "У вас уже есть активная пробная подписка." },
+          { status: 400 },
+        );
+      } else if (
+        subs &&
+        subs.length > 0 &&
+        subs[0].status === SubscriptionStatus.paused
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              "У вас уже есть активная приостановленная подписка. Просто возобновите ее.",
+          },
+          { status: 400 },
+        );
+      } else if (subs && subs.length > 0) {
+        const lastSub = subs[0];
+        const plan = await PlanService.findById(lastSub.planId);
+        const pamentProvider = lastSub.paymentProvider;
+        const paymentToken = lastSub.paymentToken;
+        if (pamentProvider && paymentToken && plan) {
+          const pendingSub = await prisma.subscription.create({
+            data: {
+              userId: user.id,
+              planId: dbPlan.id,
+              status: SubscriptionStatus.pending, 
+              currency: priceObj.currency,
+              priceAmount: priceObj.amount,
+              trialEndsAt: lastSub.trialEndsAt,
+              renewAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              paymentProvider: paymentProvider,
+              paymentToken: paymentToken,
+            },
+          });
+          const paymentRecord = await prisma.payment.create({
+            data: {
+              userId: pendingSub.userId,
+              subscriptionId: pendingSub.id,
+              orderId: uuidv4(),
+              amount: pendingSub.priceAmount,
+              currency: pendingSub.currency,
+              status: PaymentStatus.pending,
+              isRecurring: true,
+              metadata: {
+                plan_name: plan.name,
+                type: "recurring_renewal",
+              },
+            },
+          });
+          sendMessage(
+            telegramId,
+            t.Bot.confirm_payment
+              .replace("{planName}", plan.name)
+              .replace("{amount}", (priceObj.amount / 100).toString())
+              .replace("{currency}", priceObj.currency),
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: t.Bot.confirm_payment_yes,
+                      callback_data: "confirm_payment",
+                    },
+                  ],
+                  [{ text: t.Bot.no_back, callback_data: "settings" }],
+                ],
+              },
+            },
+          );
+        }
+      }
+      //Если пользователь был в системе, но подписок нет вообще, продолжаем по триалу.
+    }
     // Первичная подписка всегда бесплатна, не имеет значения
     // // Сверка цены (безопасность)
     // if (priceObj.amount !== amount) {
@@ -132,7 +240,7 @@ export async function POST(request: NextRequest) {
         birthDate: birth_date ? new Date(birth_date) : null,
         timezone: timezone,
         locale: locale,
-        deliveryTime: "07:30:00",
+        deliveryTime: "07:00:00",
         isPaused: false,
       },
     });

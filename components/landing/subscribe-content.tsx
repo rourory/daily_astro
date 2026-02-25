@@ -212,7 +212,7 @@ function CustomSelect({
 
 // --- Main Component ---
 
-export function SubscribeContent() {
+export function SubscribeContent({ telegramId }: { telegramId?: string }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentLocale = useLocale();
@@ -382,6 +382,7 @@ export function SubscribeContent() {
           currency: formData.currency,
           paymentProvider: formData.paymentProvider, // Можно отправить провайдера на бэк, если нужно
           amount: 0,
+          telegramId: telegramId, // Отправляем Telegram ID для связи платежа с пользователем
         }),
       });
 

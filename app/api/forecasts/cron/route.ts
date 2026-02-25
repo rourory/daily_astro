@@ -279,7 +279,7 @@ export async function GET(request: Request) {
 
       // Footer
       if (!isPremium) {
-        message += `<i>${ui.upgrade_text} <a href="${process.env.NEXT_PUBLIC_APP_URL}/upgrade">${ui.upgrade_btn}</a></i>`;
+        // message += `<i>${ui.upgrade_text} <a href="${process.env.NEXT_PUBLIC_APP_URL}/upgrade">${ui.upgrade_btn}</a></i>`;
       } else {
         message += `<i>${ui.footer}</i>`;
       }
