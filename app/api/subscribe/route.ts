@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
             data: {
               userId: user.id,
               planId: dbPlan.id,
-              status: SubscriptionStatus.pending, 
+              status: SubscriptionStatus.pending,
               currency: priceObj.currency,
               priceAmount: priceObj.amount,
               trialEndsAt: lastSub.trialEndsAt,
@@ -281,7 +281,7 @@ export async function POST(request: NextRequest) {
         planId: dbPlan.id,
         status: SubscriptionStatus.trial, // Ставим trial, ожидая успешного платежа для привязки карты
         currency: priceObj.currency,
-        priceAmount: priceObj.amount,
+        priceAmount: 0,
         trialEndsAt: trialEndsAt,
         renewAt: trialEndsAt, // Первое списание произойдет в конце триала
         paymentProvider: paymentProvider,
@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         subscriptionId: subscription.id,
         orderId: orderId,
-        amount: priceObj.amount,
+        amount: 0,
         currency: priceObj.currency,
         status: PaymentStatus.pending,
         isRecurring: true,
