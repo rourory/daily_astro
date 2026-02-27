@@ -402,6 +402,11 @@
     "over_1000_happy_users": "Over 1000 users already receive daily forecasts"
   },
   "SubscribePage": {
+    "subscription_is_already_active_head": "Subscription Already Active",
+    "subscription_is_already_active": "You already have an active subscription. You can manage or cancel it in the settings of our Telegram bot.",
+    "open_tg_bot": "Open Telegram Bot",
+    "back_to_details": "Back to Details",
+    "cash_retention_message": "To verify your card, a small amount may be temporarily charged and immediately refunded. This is required for card verification.",
     "your_details": "Your details",
     "language": "Language",
     "timezone": "Time zone",

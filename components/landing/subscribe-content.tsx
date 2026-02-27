@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useTranslations, useLocale } from "next-intl";
 import { ZODIAC_SIGNS } from "@/lib/types/enums";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +19,7 @@ import {
   Clock,
   CreditCard,
   ChevronDown,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "@/lib/navigation";
@@ -43,15 +44,6 @@ interface I18nPlan {
   features: string[];
 }
 
-const LOCALE_TO_CURRENCY: Record<string, Currency> = {
-  by: Currency.BYN,
-  ru: Currency.RUB,
-  en: Currency.USD,
-  kz: Currency.KZT,
-  zh: Currency.CNY,
-};
-
-const DEFAULT_CURRENCY = Currency.USD;
 const SORT_ORDER = [PlanName.basic, PlanName.plus, PlanName.premium];
 
 const UI_CONFIG: Record<string, { icon: any; highlighted: boolean }> = {
@@ -60,7 +52,6 @@ const UI_CONFIG: Record<string, { icon: any; highlighted: boolean }> = {
   [PlanName.premium]: { icon: Crown, highlighted: false },
 };
 
-// Данные для селектов
 const AVAILABLE_LANGUAGES = [
   { value: "ru", label: "Русский" },
   { value: "en", label: "English" },
@@ -81,8 +72,6 @@ const TIMEZONES = [
   "Asia/Dubai",
   "Asia/Shanghai",
 ];
-
-// --- Payment Methods Configuration ---
 
 interface PaymentMethodOption {
   value: PaymentProviderId;
@@ -161,12 +150,10 @@ function CustomSelect({
         />
       </button>
 
-      {/* Backdrop для закрытия по клику вне */}
       {isOpen && (
         <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
       )}
 
-      {/* Меню */}
       {isOpen && (
         <div
           className={cn(
@@ -231,19 +218,23 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlansLoading, setIsPlansLoading] = useState(true);
+  const [isCheckingUser, setIsCheckingUser] = useState(false);
   const [plans, setPlans] = useState<PlanWithPrices[]>([]);
 
-  // Modals state
+  // Состояние статуса пользователя
+  const [userStatus, setUserStatus] = useState<{
+    exists: boolean;
+    isTrialEligible: boolean;
+    hasActiveSubscription: boolean;
+  } | null>(null);
+
   const [showYookassaPaymentModal, setShowYookassaPaymentModal] =
     useState(false);
-
-  // Payment data state
   const [paymentToken, setPaymentToken] = useState<string | null>(null);
   const [currentSubscriptionId, setCurrentSubscriptionId] = useState<
     string | null
   >(null);
 
-  // Основной стейт формы
   const [formData, setFormData] = useState({
     zodiacSign: "",
     telegramUsername: "",
@@ -255,29 +246,23 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     paymentProvider: "yookassa" as PaymentProviderId,
   });
 
-  // Effects
   useEffect(() => {
     try {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (userTimezone) {
+      if (userTimezone)
         setFormData((prev) => ({ ...prev, timezone: userTimezone }));
-      }
     } catch (e) {
       console.error("Failed to detect timezone", e);
     }
   }, []);
 
-  // При смене платежного метода обновляем валюту
   useEffect(() => {
     const method = PAYMENT_METHODS.find(
       (m) => m.value === formData.paymentProvider,
     );
-    if (method) {
-      setFormData((prev) => ({ ...prev, currency: method.currency }));
-    }
+    if (method) setFormData((prev) => ({ ...prev, currency: method.currency }));
   }, [formData.paymentProvider]);
 
-  // Загрузка планов
   useEffect(() => {
     async function fetchPlans() {
       try {
@@ -289,9 +274,8 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
         );
         setPlans(sorted);
         const plusPlan = sorted.find((p) => p.name === PlanName.plus);
-        if (!searchParams.get("plan") && plusPlan) {
+        if (!searchParams.get("plan") && plusPlan)
           setFormData((prev) => ({ ...prev, plan: plusPlan.id }));
-        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -307,13 +291,10 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
       const found = plans.find(
         (p) => p.id === planFromUrl || p.name === planFromUrl,
       );
-      if (found) {
-        setFormData((prev) => ({ ...prev, plan: found.id }));
-      }
+      if (found) setFormData((prev) => ({ ...prev, plan: found.id }));
     }
   }, [searchParams, plans]);
 
-  // Calculations
   const formatPrice = (amount: number, currency: Currency) => {
     return new Intl.NumberFormat(formData.locale, {
       style: "currency",
@@ -321,6 +302,27 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
     }).format(amount / 100);
+  };
+
+  const checkUserStatus = async () => {
+    setIsCheckingUser(true);
+    try {
+      const res = await fetch(
+        `/api/user/check-status?username=${encodeURIComponent(formData.telegramUsername)}`,
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setUserStatus(data);
+        setStep(3);
+      } else {
+        throw new Error("Failed to check status");
+      }
+    } catch (error) {
+      console.error(error);
+      setStep(3); // Переходим даже при ошибке, но по дефолту будет триал
+    } finally {
+      setIsCheckingUser(false);
+    }
   };
 
   const selectedDbPlan = plans.find((p) => p.id === formData.plan);
@@ -331,44 +333,35 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     : "—";
 
   let selectedPriceDisplay = "—";
+  let rawPriceAmount = 0;
   let selectedCurrencyCode = formData.currency;
 
   if (selectedDbPlan) {
-    // Ищем цену строго в валюте выбранного платежного метода
     const priceObj = selectedDbPlan.prices.find(
       (p) => p.currency === formData.currency,
     );
     if (priceObj) {
       selectedCurrencyCode = priceObj.currency;
       selectedPriceDisplay = formatPrice(priceObj.amount, priceObj.currency);
-    } else {
-      // Fallback если вдруг цены нет (хотя бэкенд должен гарантировать)
-      const fallback = selectedDbPlan.prices[0];
-      if (fallback)
-        selectedPriceDisplay = formatPrice(fallback.amount, fallback.currency);
+      rawPriceAmount = priceObj.amount;
     }
   }
+
+  // Расчет цены "Сегодня" в зависимости от права на триал
+  const isEligibleForTrial = userStatus?.isTrialEligible !== false; // по умолчанию true
+  const todayAmount = isEligibleForTrial ? 0 : rawPriceAmount;
 
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
       const selectedPlanObj = plans.find((p) => p.id === formData.plan);
+      if (!selectedPlanObj) throw new Error(t("select_plan_error"));
 
-      if (!selectedPlanObj) {
-        throw new Error(t("select_plan_error"));
-      }
-
-      // Находим цену для текущей валюты (которая зависит от провайдера)
-      let priceObj = selectedPlanObj.prices.find(
+      const priceObj = selectedPlanObj.prices.find(
         (p) => p.currency === formData.currency,
       );
-
-      if (!priceObj) {
+      if (!priceObj)
         throw new Error(`Price not found for currency ${formData.currency}`);
-      }
-
-      const amountToSend = priceObj.amount;
-      console.log(formData);
 
       const response = await fetch("/api/subscribe", {
         method: "POST",
@@ -380,9 +373,9 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
           locale: formData.locale,
           timezone: formData.timezone,
           currency: formData.currency,
-          paymentProvider: formData.paymentProvider, // Можно отправить провайдера на бэк, если нужно
-          amount: 0,
-          telegramId: telegramId, // Отправляем Telegram ID для связи платежа с пользователем
+          paymentProvider: formData.paymentProvider,
+          amount: todayAmount, // Отправляем 0 если триал, иначе полную сумму
+          telegramId: telegramId,
         }),
       });
 
@@ -392,22 +385,12 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
       }
 
       const responseData = (await response.json()) as SubscribeSuccessResponse;
-
-      // Логика открытия виджета
-      // Предполагаем, что бэкенд возвращает confirmation_token и subscription_id
       if (formData.paymentProvider === "yookassa") {
         if (responseData.confirmation_token) {
           setPaymentToken(responseData.confirmation_token);
           setCurrentSubscriptionId(responseData.subscription_id);
           setShowYookassaPaymentModal(true);
-        } else {
-          // Если токена нет, возможно это редирект сценарий или ошибка
-          router.push("/checkout/error");
-        }
-      } else {
-        // Для других провайдеров пока заглушка или редирект
-        // Т.к. они disabled, сюда попасть сложно, но на всякий случай:
-        alert("Payment provider integration coming soon");
+        } else router.push("/checkout/error");
       }
     } catch (error: any) {
       console.error(error);
@@ -442,7 +425,6 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
       </header>
 
       <div className="max-w-lg mx-auto px-6 py-8">
-        {/* STEP 1 */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <h1 className="font-serif text-2xl font-medium mb-2 text-center">
@@ -480,13 +462,11 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
           </div>
         )}
 
-        {/* STEP 2 */}
         {step === 2 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <h1 className="font-serif text-2xl font-medium mb-2 text-center">
               {t("your_details")}
             </h1>
-
             <div className="space-y-6">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t("username")}</Label>
@@ -508,7 +488,6 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                     </p>
                   )}
               </div>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-1">
@@ -522,10 +501,9 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                     options={AVAILABLE_LANGUAGES}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" /> Часовой пояс
+                    <Clock className="w-3.5 h-3.5" /> {t("timezone")}
                   </Label>
                   <CustomSelect
                     value={formData.timezone}
@@ -547,7 +525,6 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                 </div>
               </div>
             </div>
-
             <div className="flex gap-3 mt-8">
               <Button
                 variant="outline"
@@ -557,201 +534,250 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                 <ArrowLeft className="w-4 h-4 mr-2" /> {t("back")}
               </Button>
               <Button
-                onClick={() =>
-                  isValidTelegramUsername(formData.telegramUsername) &&
-                  setStep(3)
+                onClick={checkUserStatus}
+                disabled={
+                  !isValidTelegramUsername(formData.telegramUsername) ||
+                  isCheckingUser
                 }
-                disabled={!isValidTelegramUsername(formData.telegramUsername)}
                 className="flex-1 py-6 rounded-2xl glow"
               >
-                {t("next")} <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3 */}
-        {step === 3 && (
-          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-            <h1 className="font-serif text-2xl font-medium mb-2 text-center">
-              {t("choose_pricing")}
-            </h1>
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              {t("seven_days_free")}
-            </p>
-
-            {/* Payment Method Select (Former Currency Select) */}
-            <div className="mb-6 flex justify-center">
-              <div className="w-full max-w-[240px] relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none">
-                  <CreditCard className="w-4 h-4" />
-                </div>
-                <CustomSelect
-                  value={formData.paymentProvider}
-                  onChange={(val) =>
-                    setFormData({
-                      ...formData,
-                      paymentProvider: val as PaymentProviderId,
-                    })
-                  }
-                  options={PAYMENT_METHODS}
-                  className="[&>button]:pl-9"
-                  align="center"
-                />
-              </div>
-            </div>
-
-            {isPlansLoading ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {plans.map((plan) => {
-                  const translation = i18nPlans.find((p) => p.id === plan.name);
-                  if (!translation) return null;
-                  const ui = UI_CONFIG[plan.name] || UI_CONFIG[PlanName.basic];
-
-                  // Отображаем цену в валюте выбранного провайдера
-                  const priceObj = plan.prices.find(
-                    (p) => p.currency === formData.currency,
-                  );
-
-                  const priceDisplay = priceObj
-                    ? formatPrice(priceObj.amount, priceObj.currency)
-                    : "—";
-
-                  return (
-                    <button
-                      key={plan.id}
-                      onClick={() =>
-                        setFormData({ ...formData, plan: plan.id })
-                      }
-                      className={cn(
-                        "w-full p-4 rounded-2xl glass text-left transition-all active:scale-[0.99]",
-                        formData.plan === plan.id
-                          ? "ring-2 ring-primary glow"
-                          : "hover:bg-muted/50",
-                      )}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={cn(
-                              "w-10 h-10 rounded-xl flex items-center justify-center",
-                              ui.highlighted
-                                ? "bg-gradient-to-br from-primary to-accent"
-                                : "bg-muted",
-                            )}
-                          >
-                            <ui.icon
-                              className={cn(
-                                "w-5 h-5",
-                                ui.highlighted
-                                  ? "text-white"
-                                  : "text-muted-foreground",
-                              )}
-                            />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">
-                                {translation.name}
-                              </span>
-                              {ui.highlighted && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
-                                  {t("popular")}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="text-right">
-                          <span className="text-xl font-bold">
-                            {priceDisplay}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {" "}
-                            / {t("monthly")}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {translation.features.map((f) => (
-                          <span
-                            key={f}
-                            className="text-xs px-2 py-1 rounded-full bg-muted/50 text-muted-foreground flex items-center gap-1"
-                          >
-                            <Check className="w-3 h-3 text-primary" /> {f}
-                          </span>
-                        ))}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            <div className="mt-6 p-4 rounded-2xl glass">
-              <div className="flex justify-between mb-2">
-                <span className="text-muted-foreground">
-                  {t("plan")} {selectedPlanName}
-                </span>
-                <span>
-                  {selectedPriceDisplay} / {t("monthly")}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">
-                  {t("seven_days_free_short")}
-                </span>
-                <span className="text-green-400">- {selectedPriceDisplay}</span>
-              </div>
-              <div className="border-t border-border/50 mt-3 pt-3 flex justify-between font-medium">
-                <span>{t("today")}</span>
-                <span className="text-green-400">
-                  {new Intl.NumberFormat(formData.locale, {
-                    style: "currency",
-                    currency: selectedCurrencyCode,
-                  }).format(0)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mt-6">
-              <Button
-                variant="outline"
-                onClick={() => setStep(2)}
-                className="flex-1 py-6 rounded-2xl glass border-0"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" /> {t("back")}
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isLoading || !selectedDbPlan}
-                className="flex-1 py-6 rounded-2xl glow"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
-                    {t("loading")}
-                  </>
+                {isCheckingUser ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    {t("start_free")} <Sparkles className="w-4 h-4 ml-2" />
+                    {t("next")} <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              {t("agree_to_terms")}
-            </p>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            {userStatus?.hasActiveSubscription ? (
+              <div className="text-center space-y-6 py-4">
+                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto text-primary">
+                  <Check className="w-8 h-8" />
+                </div>
+                <h1 className="font-serif text-2xl font-medium">
+                  {t("subscription_is_already_active_head")}
+                </h1>
+                <p className="text-muted-foreground">
+                  {t("subscription_is_already_active")}
+                </p>
+                <Button asChild className="w-full py-6 rounded-2xl glow">
+                  <a href="https://t.me/Dailyastrobelarusbot">
+                    {t("open_tg_bot")}
+                  </a>
+                </Button>
+                <Button variant="ghost" onClick={() => setStep(2)}>
+                  {t("back_to_details")}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h1 className="font-serif text-2xl font-medium mb-2 text-center">
+                  {t("choose_pricing")}
+                </h1>
+                <p className="text-sm text-muted-foreground text-center mb-6">
+                  {isEligibleForTrial
+                    ? t("seven_days_free")
+                    : "Пробный период уже использован. Выберите подходящий тариф."}
+                </p>
+
+                <div className="mb-6 flex justify-center">
+                  <div className="w-full max-w-[240px] relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none">
+                      <CreditCard className="w-4 h-4" />
+                    </div>
+                    <CustomSelect
+                      value={formData.paymentProvider}
+                      onChange={(val) =>
+                        setFormData({
+                          ...formData,
+                          paymentProvider: val as PaymentProviderId,
+                        })
+                      }
+                      options={PAYMENT_METHODS}
+                      className="[&>button]:pl-9"
+                      align="center"
+                    />
+                  </div>
+                </div>
+
+                {isPlansLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {plans.map((plan) => {
+                      const translation = i18nPlans.find(
+                        (p) => p.id === plan.name,
+                      );
+                      if (!translation) return null;
+                      const ui =
+                        UI_CONFIG[plan.name] || UI_CONFIG[PlanName.basic];
+                      const priceObj = plan.prices.find(
+                        (p) => p.currency === formData.currency,
+                      );
+                      const priceDisplay = priceObj
+                        ? formatPrice(priceObj.amount, priceObj.currency)
+                        : "—";
+
+                      return (
+                        <button
+                          key={plan.id}
+                          onClick={() =>
+                            setFormData({ ...formData, plan: plan.id })
+                          }
+                          className={cn(
+                            "w-full p-4 rounded-2xl glass text-left transition-all active:scale-[0.99]",
+                            formData.plan === plan.id
+                              ? "ring-2 ring-primary glow"
+                              : "hover:bg-muted/50",
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={cn(
+                                  "w-10 h-10 rounded-xl flex items-center justify-center",
+                                  ui.highlighted
+                                    ? "bg-gradient-to-br from-primary to-accent"
+                                    : "bg-muted",
+                                )}
+                              >
+                                <ui.icon
+                                  className={cn(
+                                    "w-5 h-5",
+                                    ui.highlighted
+                                      ? "text-white"
+                                      : "text-muted-foreground",
+                                  )}
+                                />
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    {translation.name}
+                                  </span>
+                                  {ui.highlighted && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary">
+                                      {t("popular")}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xl font-bold">
+                                {priceDisplay}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                {" "}
+                                / {t("monthly")}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {translation.features.map((f) => (
+                              <span
+                                key={f}
+                                className="text-xs px-2 py-1 rounded-full bg-muted/50 text-muted-foreground flex items-center gap-1"
+                              >
+                                <Check className="w-3 h-3 text-primary" /> {f}
+                              </span>
+                            ))}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div className="mt-6 p-4 rounded-2xl glass">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-muted-foreground">
+                      {t("plan")} {selectedPlanName}
+                    </span>
+                    <span>
+                      {selectedPriceDisplay} / {t("monthly")}
+                    </span>
+                  </div>
+
+                  {isEligibleForTrial && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {t("seven_days_free_short")}
+                      </span>
+                      <span className="text-green-400">
+                        - {selectedPriceDisplay}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="border-t border-border/50 mt-3 pt-3 flex justify-between font-medium">
+                    <span>{t("today")}</span>
+                    <span
+                      className={cn(todayAmount === 0 ? "text-green-400" : "")}
+                    >
+                      {todayAmount === 0
+                        ? new Intl.NumberFormat(formData.locale, {
+                            style: "currency",
+                            currency: selectedCurrencyCode,
+                          }).format(0)
+                        : selectedPriceDisplay}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Информационный блок о проверке карты */}
+                <div className="mt-4 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-3 text-[11px] leading-snug text-blue-200/80">
+                  <Info className="w-4 h-4 shrink-0 text-blue-400" />
+                  <p>
+                    {t("cash_retention_message")}
+                  </p>
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setStep(2)}
+                    className="flex-1 py-6 rounded-2xl glass border-0"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" /> {t("back")}
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isLoading || !selectedDbPlan}
+                    className="flex-1 py-6 rounded-2xl glow"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                        {t("loading")}
+                      </>
+                    ) : (
+                      <>
+                        {isEligibleForTrial
+                          ? t("start_free")
+                          : "Оплатить подписку"}{" "}
+                        <Sparkles className="w-4 h-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground text-center mt-4">
+                  {t("agree_to_terms")}
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>
 
-      {/* --- PAYMENT MODALS --- */}
       <YookassaPaymentModal
         isOpen={showYookassaPaymentModal}
         onClose={() => setShowYookassaPaymentModal(false)}

@@ -134,10 +134,10 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        // 2. СТАВИМ ПОДПИСКУ НА ПАУЗУ
+        // 2. Отменяем подписку
         await prisma.subscription.update({
           where: { id: sub.id },
-          data: { status: SubscriptionStatus.paused },
+          data: { status: SubscriptionStatus.canceled },
         });
 
         // 3. Лог ошибки

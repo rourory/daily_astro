@@ -159,9 +159,6 @@ export function YookassaPaymentModal({
     <div className="fixed inset-0 z-[9999] bg-white flex flex-col animate-in fade-in duration-200">
       {/* Шапка */}
       <div className="flex-none h-16 border-b flex items-center justify-between px-4 sm:px-6 bg-white z-10 shadow-sm">
-        <h2 className="text-lg sm:text-xl font-semibold">
-          Оплата пожертвования
-        </h2>
         {/* <button
           onClick={onClose}
           className="rounded-full p-2 bg-slate-100 hover:bg-slate-200 transition-colors"

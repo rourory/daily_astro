@@ -88,7 +88,7 @@ export async function GET(request: Request) {
       }
 
       const userCurrentHour = userLocalTime.getHours();
-      const [deliveryHour] = user.deliveryTime.split(":").map(Number); // "07:30" -> 7
+      const [deliveryHour] = user.deliveryTime.split(":").map(Number); // "07:00" -> 7
 
       if (userCurrentHour < deliveryHour) {
         results.skipped.timeNotArrived++;

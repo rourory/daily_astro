@@ -195,6 +195,10 @@ export async function POST(request: NextRequest) {
               },
             },
           });
+          await prisma.subscription.update({
+            where: { id: subscriptionId },
+            data: { status: SubscriptionStatus.trial }, // Возвращаем в trial, так как это был холд для привязки карты
+          });
         } else {
           // --- ЭТО РЕАЛЬНЫЙ СБОЙ (НЕТ ДЕНЕГ / ОТМЕНА) ---
 

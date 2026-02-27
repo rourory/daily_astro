@@ -246,20 +246,20 @@ export async function POST(request: NextRequest) {
     });
 
     // 5. Проверка активных подписок (чтобы не дублировать)
-    const existingSub = await prisma.subscription.findFirst({
+    const existingSubs = await prisma.subscription.findMany({
       where: {
         userId: user.id,
-        status: {
-          in: [
-            SubscriptionStatus.active,
-            SubscriptionStatus.trial,
-            SubscriptionStatus.grace,
-          ],
-        },
       },
+      orderBy: { createdAt: "desc" },
     });
 
-    if (existingSub) {
+    if (
+      existingSubs &&
+      existingSubs.length > 0 &&
+      (existingSubs[0].status === SubscriptionStatus.active ||
+        existingSubs[0].status === SubscriptionStatus.trial ||
+        existingSubs[0].status === SubscriptionStatus.paused)
+    ) {
       return NextResponse.json(
         { error: "У вас уже есть активная подписка." },
         { status: 400 },
@@ -273,13 +273,13 @@ export async function POST(request: NextRequest) {
     const orderId = uuidv4(); // Уникальный ID заказа для нашей системы
 
     // 7. Создаем Подписку и Платеж в транзакции (или последовательно)
-    // Создаем подписку со статусом TRIAL (но она ждет привязки карты через платеж)
+    // Создаем подписку со статусом PENDING (но она ждет привязки карты через платеж)
 
     const subscription = await prisma.subscription.create({
       data: {
         userId: user.id,
         planId: dbPlan.id,
-        status: SubscriptionStatus.trial, // Ставим trial, ожидая успешного платежа для привязки карты
+        status: SubscriptionStatus.pending, // Ставим trial, ожидая успешного платежа для привязки карты
         currency: priceObj.currency,
         priceAmount: 0,
         trialEndsAt: trialEndsAt,
@@ -302,6 +302,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           plan_name: dbPlan.name,
           provider: paymentProvider,
+          type: "setup_payment",
         },
       },
     });
@@ -311,9 +312,6 @@ export async function POST(request: NextRequest) {
 
     switch (paymentProvider as PaymentProviderId) {
       case "yookassa":
-        // Конвертируем копейки в рубли (100 -> 1.00)
-        const yookassaAmount = 0.0;
-
         // Метаданные для вебхука (чтобы понять, какую подписку обновлять)
         const metadata: YookassaPaymentMetadata = {
           subscriptionId: subscription.id,
@@ -359,6 +357,8 @@ export async function POST(request: NextRequest) {
               metadata: { error: e.message },
             },
           });
+
+          await prisma.subscription.delete({ where: { id: subscription.id } });
           throw new Error("Ошибка создания платежа в ЮKassa: " + e.message);
         }
         break;

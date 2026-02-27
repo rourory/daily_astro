@@ -40,7 +40,7 @@ export async function handleButton(
   if (body.callback_query?.id) {
     await answerCallback(body.callback_query.id);
   }
-
+  
   // === ЛОГИКА РОУТИНГА ===
 
   // 2. Обработка start_menu (из API подписки)

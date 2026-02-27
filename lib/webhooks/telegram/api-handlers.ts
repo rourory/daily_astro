@@ -225,11 +225,19 @@ export async function handleTimeSelectionPrompt(
   t: Translations,
 ) {
   const sub = user.subscriptions[0];
-
+  console.log("Проверяем подписку для выбора времени:", {
+    hasSubscription: !!sub,
+    subscriptionStatus: sub?.status,
+    planName: sub?.plan.name,
+  });
   // Проверяем, есть ли подписка Premium
   const isPremium =
-    sub?.status === (SubscriptionStatus.active || SubscriptionStatus.trial) &&
-    sub.plan.name === PlanName.premium;
+    (sub?.status === SubscriptionStatus.active &&
+      sub.plan.name === PlanName.premium) ||
+    (sub?.status === SubscriptionStatus.trial &&
+      sub.plan.name === PlanName.premium);
+
+  console.log(`Пользователь ${user.email} имеет Premium:`, isPremium);
 
   // Если это админ/тест или Premium — разрешаем (можно убрать true для строгого режима)
   if (isPremium) {
