@@ -1,72 +1,52 @@
-import { type NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import { SubscriptionStatus } from "@prisma/client";
-import { getMessages } from "@/lib/webhooks/telegram/localization-helpers";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const username = searchParams.get("username")?.replace("@", "").toLowerCase();
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const email = searchParams.get("email");
 
-  // Определяем базовую локаль из заголовков или дефолтную
-  const defaultLocale = "ru";
-
-  if (!username) {
-    return NextResponse.json(
-      { error: "Username is required" },
-      { status: 400 },
-    );
+  if (!email) {
+    return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
-  const userEmail = `@${username}@telegram.web`;
-
   try {
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: userEmail }],
-      },
+    const user = await prisma.user.findUnique({
+      where: { email },
       include: {
         subscriptions: {
-          orderBy: { createdAt: "desc" },
+          where: {
+            status: { in: ["active", "trial"] },
+            renewAt: { gt: new Date() }, // Подписка еще не истекла
+          },
         },
+        payments: true, // Чтобы проверить, были ли платежи (для триала)
       },
     });
 
-    // Если юзера нет
     if (!user) {
       return NextResponse.json({
         exists: false,
-        isTrialEligible: true,
+        isTrialEligible: true, // Новый пользователь -> положен триал
         hasActiveSubscription: false,
       });
     }
 
-    // Загружаем сообщения на языке пользователя для будущих нужд (если решите возвращать тексты отсюда)
-    // const t = await getMessages(user.locale || defaultLocale);
-
-    const lastSub = user.subscriptions[0];
-    const activeStatuses: SubscriptionStatus[] = [
-      SubscriptionStatus.active,
-      SubscriptionStatus.trial,
-      SubscriptionStatus.grace,
-      SubscriptionStatus.paused,
-    ];
-
-    // Логика: триал использован, если в истории есть хоть одна запись со статусом trial
-    const isTrialUsed = user.subscriptions.some(
-      (sub) => sub.status === SubscriptionStatus.trial,
+    // Проверяем право на триал
+    // Если были успешные платежи ИЛИ были подписки ранее -> триал недоступен
+    const hasSuccessfulPayments = user.payments.some(
+      (p) => p.status === "succeeded",
     );
+    // Можно добавить логику проверки прошлых подписок со статусом trial/expired
 
-    const hasActiveSubscription =
-      lastSub && activeStatuses.includes(lastSub.status);
+    const isTrialEligible = !hasSuccessfulPayments;
+    const hasActiveSubscription = user.subscriptions.length > 0;
 
     return NextResponse.json({
       exists: true,
-      hasActiveSubscription: hasActiveSubscription,
-      isTrialEligible: !isTrialUsed,
-      userLocale: user.locale,
+      isTrialEligible,
+      hasActiveSubscription,
     });
   } catch (error) {
-    console.error("Check status error:", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    return NextResponse.json({ error: "Database error" }, { status: 500 });
   }
 }

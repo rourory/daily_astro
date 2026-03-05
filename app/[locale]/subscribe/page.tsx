@@ -7,7 +7,6 @@ export default async function SubscribePage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const telegramId = (await searchParams).telegramId;
   return (
     <Suspense
       fallback={
@@ -16,7 +15,7 @@ export default async function SubscribePage({
         </main>
       }
     >
-      <SubscribeContent telegramId={telegramId} />
+      <SubscribeContent />
     </Suspense>
   );
 }

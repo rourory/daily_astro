@@ -27,7 +27,7 @@ export async function Footer() {
             rel="noopener noreferrer"
           >
             <Send className="w-4 h-4" />
-            {t("open_on_telegram")}
+            {t("open_on_app")}
           </a>
         </div>
 

@@ -205,7 +205,7 @@
     "about_your_future": "about your day",
     "get_personal_hooscope": "Get a personal horoscope every morning on Telegram",
     "try_for_free": "Try for free",
-    "open_on_telegram": "Open in Telegram",
+    "open_on_app": "Open in application",
     "free_period_one_click_cancel": "7 days free • Cancel with one click"
   },
   "FeaturesSection": {
@@ -266,7 +266,7 @@
   },
   "FooterSection": {
     "personalized_horoscope": "Personal horoscopes on Telegram",
-    "open_on_telegram": "Open the bot",
+    "open_on_app": "Open the application",
     "pricing": "Pricing",
     "free_forecast": "Free forecast",
     "made_with": "Made with",
@@ -412,7 +412,7 @@
     "timezone": "Time zone",
     "your_sign": "Your sign",
     "choose_your_sign": "Choose your sign",
-    "your_telegram": "Your Telegram",
+    "your_email": "Your Telegram",
     "where_to_send_forecast": "Where to send forecasts",
     "username": "Username",
     "invalid_username": "Enter a valid Telegram username (for example: @astro_user)",
@@ -480,7 +480,7 @@
     "forecast_isnt_ready": "The forecast for this sign is not ready yet",
     "choose_another_sign": "Try choosing another sign or come back later",
     "get_daily_forecasts": "Receive forecasts every day",
-    "get_in_telegram": "Right in Telegram at a convenient time",
+    "get_in_application": "Right in Telegram at a convenient time",
     "seven_days_free": "7 days free on any plan",
     "disclaimer": "Entertainment and motivational content. Not financial, medical, or legal advice."
   },
@@ -494,7 +494,7 @@
     "pending_title": "Processing payment",
     "pending_description": "This may take a few minutes. We'll notify you in the bot. Thank you for your patience!",
     "what_is_next": "What's next:",
-    "open_the_bot": "Open the bot @Dailyastrobelarusbot on Telegram",
+    "open_the_app": "Open the bot @Dailyastrobelarusbot on Telegram",
     "press_start": "Press /start to activate",
     "enjoy_forecasts": "Enjoy the forecasts!",
     "open_bot_button": "Open the bot in Telegram",
@@ -506,7 +506,7 @@
     "success_message": "Your subscription is activated. The first forecast will arrive tomorrow morning.",
     "seven_days_free": "7 days free",
     "cancel_anytime": "Cancel anytime",
-    "open_the_bot": "Open the bot in Telegram",
+    "open_the_app": "Open the bot in Telegram",
     "homepage": "Home"
   },
   "ErrorPage": {

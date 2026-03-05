@@ -8,24 +8,15 @@ import {
 } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import {
-  createAutoPayment,
-  createYookassaPayment,
-  createYookassaSetupPayment,
+  createYookassaPayment, // Для полных платежей
+  createYookassaSetupPayment, // Для привязки карты (триал)
   type YookassaPaymentMetadata,
-} from "@/lib/payment/yookassa"; // Предполагаемый путь к твоему файлу с хелпером
-import {
-  PaymentService,
-  PlanService,
-  SubscriptionService,
-  UserService,
-} from "@/lib/dal/services";
-import { sendMessage } from "@/lib/webhooks/telegram/send-message";
-import { getMessages } from "@/lib/webhooks/telegram/localization-helpers";
+} from "@/lib/payment/yookassa";
 
 export interface SubscribeSuccessResponse {
   success: true;
   subscription_id: string;
-  trial_ends_at: string; // ISO string
+  trial_ends_at: string | null;
   confirmation_token: string;
   payment_id: string;
 }
@@ -35,11 +26,6 @@ export interface SubscribeErrorResponse {
   error: string;
 }
 
-export type SubscribeResponse =
-  | SubscribeSuccessResponse
-  | SubscribeErrorResponse;
-
-// Типы провайдеров (как на фронте)
 export type PaymentProviderId =
   | "yookassa"
   | "bepaid"
@@ -51,34 +37,34 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      telegram_username,
+      email, // Теперь главный идентификатор
       zodiac_sign,
-      birth_date,
       plan_id,
       locale = "ru",
       timezone = "Europe/Minsk",
-      currency, // Например: "RUB"
-      paymentProvider, // Например: "yookassa"
-      amount, // Сумма в минимальных единицах (копейках)
-      telegramId, // Новый параметр для связи с пользователем в Telegram
+      currency,
+      paymentProvider,
+      amount, // Сумма от фронтенда (0 для триала, полная для покупки)
     } = body;
 
     // 1. Валидация входных данных
-
-    if (
-      !telegram_username ||
-      !zodiac_sign ||
-      !plan_id ||
-      !currency ||
-      !paymentProvider
-    ) {
+    if (!email || !zodiac_sign || !plan_id || !currency || !paymentProvider) {
       return NextResponse.json(
         { error: "Заполните все обязательные поля" },
         { status: 400 },
       );
     }
 
-    // 2. Валидация Enum-ов
+    // Валидация Email (базовая)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Некорректный формат email" },
+        { status: 400 },
+      );
+    }
+
+    // Валидация Enum-ов
     const validZodiacs = Object.values(ZodiacSign) as string[];
     if (!validZodiacs.includes(zodiac_sign)) {
       return NextResponse.json(
@@ -92,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Неверная валюта" }, { status: 400 });
     }
 
-    // 3. Поиск Плана и Цены в БД
+    // 2. Поиск Плана и Цены в БД
     const dbPlan = await prisma.plan.findUnique({
       where: { id: plan_id },
       include: { prices: true },
@@ -102,9 +88,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Тариф не найден" }, { status: 400 });
     }
 
-    // Ищем цену строго для выбранной валюты
     const priceObj = dbPlan.prices.find((p) => p.currency === currency);
-
     if (!priceObj) {
       return NextResponse.json(
         { error: `Цена для тарифа в валюте ${currency} не установлена` },
@@ -112,284 +96,206 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    //Если есть telegramId, значит пользователь был в системе
-    if (telegramId) {
-      const user = await UserService.findByTelegramId(telegramId);
-      if (!user) {
-        return NextResponse.json(
-          { error: "Пользователь с таким Telegram ID не найден" },
-          { status: 400 },
-        );
-      }
-      const t = await getMessages(user.locale || "ru");
-      const subs = await SubscriptionService.findByUser(user.id);
-      if (
-        subs &&
-        subs.length > 0 &&
-        subs[0].status === SubscriptionStatus.active
-      ) {
+    // 3. Работа с Пользователем (Find or Create)
+    // Мы ищем юзера по email.
+
+    let user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        subscriptions: true,
+        payments: { where: { status: PaymentStatus.succeeded } }, // Загружаем успешные платежи для проверки права на триал
+      },
+    });
+
+    // Определяем право на триал
+    let isTrialEligible = true;
+
+    if (user) {
+      // Если юзер есть, проверяем активные подписки
+      const activeSub = user.subscriptions.find(
+        (s) =>
+          s.status === SubscriptionStatus.active ||
+          s.status === SubscriptionStatus.trial,
+      );
+
+      if (activeSub) {
         return NextResponse.json(
           { error: "У вас уже есть активная подписка." },
           { status: 400 },
         );
-      } else if (
-        subs &&
-        subs.length > 0 &&
-        subs[0].status === SubscriptionStatus.trial
-      ) {
-        return NextResponse.json(
-          { error: "У вас уже есть активная пробная подписка." },
-          { status: 400 },
-        );
-      } else if (
-        subs &&
-        subs.length > 0 &&
-        subs[0].status === SubscriptionStatus.paused
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              "У вас уже есть активная приостановленная подписка. Просто возобновите ее.",
-          },
-          { status: 400 },
-        );
-      } else if (subs && subs.length > 0) {
-        const lastSub = subs[0];
-        const plan = await PlanService.findById(lastSub.planId);
-        const pamentProvider = lastSub.paymentProvider;
-        const paymentToken = lastSub.paymentToken;
-        if (pamentProvider && paymentToken && plan) {
-          const pendingSub = await prisma.subscription.create({
-            data: {
-              userId: user.id,
-              planId: dbPlan.id,
-              status: SubscriptionStatus.pending,
-              currency: priceObj.currency,
-              priceAmount: priceObj.amount,
-              trialEndsAt: lastSub.trialEndsAt,
-              renewAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-              paymentProvider: paymentProvider,
-              paymentToken: paymentToken,
-            },
-          });
-          const paymentRecord = await prisma.payment.create({
-            data: {
-              userId: pendingSub.userId,
-              subscriptionId: pendingSub.id,
-              orderId: uuidv4(),
-              amount: pendingSub.priceAmount,
-              currency: pendingSub.currency,
-              status: PaymentStatus.pending,
-              isRecurring: true,
-              metadata: {
-                plan_name: plan.name,
-                type: "recurring_renewal",
-              },
-            },
-          });
-          sendMessage(
-            telegramId,
-            t.Bot.confirm_payment
-              .replace("{planName}", plan.name)
-              .replace("{amount}", (priceObj.amount / 100).toString())
-              .replace("{currency}", priceObj.currency),
-            {
-              reply_markup: {
-                inline_keyboard: [
-                  [
-                    {
-                      text: t.Bot.confirm_payment_yes,
-                      callback_data: "confirm_payment",
-                    },
-                  ],
-                  [{ text: t.Bot.no_back, callback_data: "settings" }],
-                ],
-              },
-            },
-          );
-        }
       }
-      //Если пользователь был в системе, но подписок нет вообще, продолжаем по триалу.
-    }
-    // Первичная подписка всегда бесплатна, не имеет значения
-    // // Сверка цены (безопасность)
-    // if (priceObj.amount !== amount) {
 
-    //   return NextResponse.json(
-    //     { error: "Цена тарифа изменилась, попробуйте обновить страницу." },
-    //     { status: 409 },
-    //   );
-    // }
+      // Проверяем право на триал: если были успешные платежи или старые подписки - триал не положен
+      if (user.payments.length > 0 || user.subscriptions.length > 0) {
+        isTrialEligible = false;
+      }
 
-    // 4. Работа с Пользователем (Upsert)
-    const cleanUsername = telegram_username.replace("@", "").toLowerCase();
-    const userEmail = `@${cleanUsername}@telegram.web`; // Временная генерация email
-
-    const user = await prisma.user.upsert({
-      where: { email: userEmail }, // Лучше искать по telegramId если он есть, но тут логика через email/username
-      update: {
-        zodiacSign: zodiac_sign as ZodiacSign,
-        birthDate: birth_date ? new Date(birth_date) : undefined,
-        timezone: timezone,
-        locale: locale,
-        countryCode: locale === "ru" ? "RU" : "US", // Упрощенная логика, в идеале определять по IP
-      },
-      create: {
-        email: userEmail,
-        zodiacSign: zodiac_sign as ZodiacSign,
-        birthDate: birth_date ? new Date(birth_date) : null,
-        timezone: timezone,
-        locale: locale,
-        deliveryTime: "07:00:00",
-        isPaused: false,
-      },
-    });
-
-    // 5. Проверка активных подписок (чтобы не дублировать)
-    const existingSubs = await prisma.subscription.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (
-      existingSubs &&
-      existingSubs.length > 0 &&
-      (existingSubs[0].status === SubscriptionStatus.active ||
-        existingSubs[0].status === SubscriptionStatus.trial ||
-        existingSubs[0].status === SubscriptionStatus.paused)
-    ) {
-      return NextResponse.json(
-        { error: "У вас уже есть активная подписка." },
-        { status: 400 },
-      );
+      // Обновляем данные пользователя (знак, таймзона могли измениться)
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          zodiacSign: zodiac_sign as ZodiacSign,
+          timezone,
+          locale,
+        },
+        include: { subscriptions: true, payments: true },
+      });
+    } else {
+      // Создаем нового пользователя
+      user = await prisma.user.create({
+        data: {
+          email,
+          zodiacSign: zodiac_sign as ZodiacSign,
+          timezone,
+          locale,
+          countryCode: locale === "ru" ? "RU" : "US",
+          deliveryTime: "07:00:00",
+        },
+        include: { subscriptions: true, payments: true },
+      });
+      // Новым пользователям всегда положен триал
+      isTrialEligible = true;
     }
 
-    // 6. Подготовка данных для создания подписки и платежа
-    const trialEndsAt = new Date();
-    trialEndsAt.setDate(trialEndsAt.getDate() + 7); // 7 дней триала
+    // 4. Подготовка данных для Подписки
+    const orderId = uuidv4();
 
-    const orderId = uuidv4(); // Уникальный ID заказа для нашей системы
+    // Если положен триал -> amount = 0 (или 1 рубль для auth), renew через 7 дней
+    // Если не положен -> amount = полная цена, renew через месяц
+    const shouldUseTrial = isTrialEligible; // Можно добавить логику && amount === 0, если доверяем фронту
 
-    // 7. Создаем Подписку и Платеж в транзакции (или последовательно)
-    // Создаем подписку со статусом PENDING (но она ждет привязки карты через платеж)
+    const trialDays = 7;
+    const now = new Date();
 
+    let trialEndsAt: Date | null = null;
+    let renewAt: Date;
+    let initialPaymentAmount: number;
+
+    if (shouldUseTrial) {
+      trialEndsAt = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+      renewAt = trialEndsAt; // Первое реальное списание в конце триала
+      initialPaymentAmount = 0; // Для привязки карты
+    } else {
+      trialEndsAt = null;
+      renewAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // След. списание через месяц
+      initialPaymentAmount = priceObj.amount; // Списываем сразу
+    }
+
+    // 5. Создаем Subscription (Pending)
     const subscription = await prisma.subscription.create({
       data: {
         userId: user.id,
         planId: dbPlan.id,
-        status: SubscriptionStatus.pending, // Ставим trial, ожидая успешного платежа для привязки карты
+        status: SubscriptionStatus.pending, // Ждем оплаты/привязки
         currency: priceObj.currency,
-        priceAmount: 0,
+        priceAmount: priceObj.amount, // Сумма продления (всегда полная цена)
         trialEndsAt: trialEndsAt,
-        renewAt: trialEndsAt, // Первое списание произойдет в конце триала
+        renewAt: renewAt,
         paymentProvider: paymentProvider,
       },
     });
 
-    // Создаем запись о платеже (Pending)
-
+    // 6. Создаем Payment (Pending)
     const paymentRecord = await prisma.payment.create({
       data: {
         userId: user.id,
         subscriptionId: subscription.id,
         orderId: orderId,
-        amount: 0,
+        amount: initialPaymentAmount,
         currency: priceObj.currency,
         status: PaymentStatus.pending,
         isRecurring: true,
         metadata: {
           plan_name: dbPlan.name,
           provider: paymentProvider,
-          type: "setup_payment",
+          type: shouldUseTrial ? "setup_payment" : "first_payment", // Метка типа платежа
         },
       },
     });
 
-    // 8. Инициализация платежа во внешнем сервисе
+    // 7. Инициализация платежа (Yookassa)
     let paymentData;
 
-    switch (paymentProvider as PaymentProviderId) {
-      case "yookassa":
-        // Метаданные для вебхука (чтобы понять, какую подписку обновлять)
-        const metadata: YookassaPaymentMetadata = {
-          subscriptionId: subscription.id,
-          isRecurring: "true",
-          email: user.email || undefined,
-        };
+    if (paymentProvider === "yookassa") {
+      const metadata: YookassaPaymentMetadata = {
+        subscriptionId: subscription.id,
+        isRecurring: "true",
+        email: user.email,
+      };
 
-        try {
-          // Вызываем хелпер
-          // Важно: description должен быть понятным пользователю
-          const description = `Привязка карты для подписки ${dbPlan.name} (7 дней бесплатно, далее ${priceObj.amount / 100} ${priceObj.currency})`;
+      try {
+        let yookassaResponse;
 
-          const yookassaResponse = await createYookassaSetupPayment(
+        if (shouldUseTrial) {
+          // --- СЦЕНАРИЙ ТРИАЛА (Привязка карты) ---
+          const description = `Привязка карты для подписки ${dbPlan.name} (7 дней бесплатно, далее ${priceObj.amount / 100} ${priceObj.currency}/мес)`;
+          // Используем метод для setup (обычно это платеж на 0 или 1 рубль с save_payment_method=true)
+          yookassaResponse = await createYookassaSetupPayment(
             description,
             metadata,
             "embedded",
           );
-          console.log("Yookassa setup payment response:", yookassaResponse);
-          // Сохраняем ID платежа от провайдера
-          await prisma.payment.update({
-            where: { id: paymentRecord.id },
-            data: {
-              providerPaymentId: yookassaResponse.id,
-              metadata: {
-                ...(paymentRecord.metadata as object),
-                yookassa_response: yookassaResponse as any,
-              },
-            },
-          });
-
-          paymentData = {
-            confirmation_token:
-              yookassaResponse.confirmation.confirmation_token!,
-            payment_id: yookassaResponse.id,
-          };
-        } catch (e: any) {
-          console.error("Yookassa creation failed", e);
-          // Откатываем создание подписки/платежа в случае ошибки API (опционально)
-          await prisma.payment.update({
-            where: { id: paymentRecord.id },
-            data: {
-              status: PaymentStatus.failed,
-              metadata: { error: e.message },
-            },
-          });
-
-          await prisma.subscription.delete({ where: { id: subscription.id } });
-          throw new Error("Ошибка создания платежа в ЮKassa: " + e.message);
+        } else {
+          // --- СЦЕНАРИЙ ПОКУПКИ (Списание сразу) ---
+          const description = `Оплата подписки ${dbPlan.name} (1 месяц)`;
+          yookassaResponse = await createYookassaPayment(
+            initialPaymentAmount,
+            description,
+            metadata,
+            "embedded", // или undefined, если редирект
+          );
         }
-        break;
 
-      case "bepaid":
-      case "robokassa":
-      case "stripe":
-      case "paypal":
-        // Заглушка для других методов
-        return NextResponse.json(
-          { error: `Провайдер ${paymentProvider} временно недоступен` },
-          { status: 501 },
-        );
+        console.log("Yookassa response:", yookassaResponse.id);
 
-      default:
-        return NextResponse.json(
-          { error: "Неизвестный платежный провайдер" },
-          { status: 400 },
-        );
+        // Обновляем paymentId
+        await prisma.payment.update({
+          where: { id: paymentRecord.id },
+          data: {
+            providerPaymentId: yookassaResponse.id,
+            metadata: {
+              ...(paymentRecord.metadata as object),
+              yookassa_response: yookassaResponse as any,
+            },
+          },
+        });
+
+        if (!yookassaResponse.confirmation?.confirmation_token) {
+          throw new Error("Не получен токен подтверждения от ЮКассы");
+        }
+
+        paymentData = {
+          confirmation_token: yookassaResponse.confirmation.confirmation_token,
+          payment_id: yookassaResponse.id,
+        };
+      } catch (e: any) {
+        console.error("Yookassa creation failed", e);
+        // Откат
+        await prisma.payment.update({
+          where: { id: paymentRecord.id },
+          data: { status: PaymentStatus.failed },
+        });
+        await prisma.subscription.delete({ where: { id: subscription.id } });
+
+        throw new Error("Ошибка создания платежа: " + e.message);
+      }
+    } else {
+      return NextResponse.json(
+        { error: `Провайдер ${paymentProvider} временно недоступен` },
+        { status: 501 },
+      );
     }
 
-    // 9. Возвращаем данные на фронт
+    // 8. Ответ
     return NextResponse.json<SubscribeSuccessResponse>({
       success: true,
       subscription_id: subscription.id,
-      trial_ends_at: trialEndsAt.toISOString(),
-      ...paymentData, // confirmation_token, payment_id
+      trial_ends_at: trialEndsAt ? trialEndsAt.toISOString() : null,
+      ...paymentData,
     });
   } catch (error: any) {
     console.error("Subscribe API error:", error);
-    return NextResponse.json<SubscribeErrorResponse>(
+    return NextResponse.json(
       { error: error.message || "Internal server error" },
       { status: 500 },
     );

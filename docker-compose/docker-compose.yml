@@ -30,13 +30,34 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+  netnext:
+    build:
+      context: ./netnext-project
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - HOSTNAME=0.0.0.0
+    networks:
+      - application
+    restart: unless-stopped
+    healthcheck:
+      test:
+        ["CMD", "wget", "--no-verbose", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   nextjs-app:
     image: rourory/daily-astro:latest
     container_name: nextjs-app
     restart: unless-stopped
-    expose:
-      - "3000"
+    ports:
+      - "3001:3000"
     environment:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -45,14 +66,18 @@ services:
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       BOT_TOKEN: ${BOT_TOKEN}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      BEPAID_SHOP_ID: ${BEPAID_SHOP_ID}
-      BEPAID_SECRET_KEY: ${BEPAID_SECRET_KEY}
-      BEPAID_WEBHOOK_SECRET: ${BEPAID_WEBHOOK_SECRET}
       CRON_SECRET: ${CRON_SECRET}
-      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
       YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
       YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
       TEST_PAYMENT: ${TEST_PAYMENT}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT}
     networks:
       - application
     depends_on:
@@ -74,6 +99,7 @@ services:
     depends_on:
       - nextjs-app
       - pgadmin
+      - netnext
 
   certbot:
     image: certbot/certbot
@@ -100,6 +126,10 @@ services:
     labels:
       # Позволяем Ofelia читать лейблы этого контейнера
       ofelia.enabled: "true"
+
+      # Перезагрузка nginx для подхвата новых ssl сертификатов
+      ofelia.job-exec.nginx-reload.schedule: "@weekly"
+      ofelia.job-exec.nginx-reload.command: "nginx -s reload"
 
       # Продление подписок (3:00 UTC)
       ofelia.job-local.sub-cron.schedule: "0 0 3 * * *"

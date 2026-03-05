@@ -169,7 +169,7 @@
     "about_your_future": "您的生活",
     "get_personal_hooscope": "每天早上在 Telegram 接收您的个人运势预测",
     "try_for_free": "免费试用",
-    "open_on_telegram": "在 Telegram 中打开",
+    "open_on_app": "在 Telegram 中打开",
     "free_period_one_click_cancel": "7天免费 • 一键取消"
   },
   "FeaturesSection": {
@@ -206,7 +206,7 @@
   },
   "FooterSection": {
     "personalized_horoscope": "Telegram 个人运势预测",
-    "open_on_telegram": "打开机器人",
+    "open_on_app": "打开机器人",
     "pricing": "方案",
     "free_forecast": "免费预测",
     "made_with": "用心制作于",
@@ -344,7 +344,7 @@
     "timezone": "时区",
     "your_sign": "您的星座",
     "choose_your_sign": "选择您的星座",
-    "your_telegram": "您的 Telegram",
+    "your_email": "您的 Telegram",
     "where_to_send_forecast": "接收预测的账号",
     "username": "用户名",
     "invalid_username": "请输入有效的 Telegram 用户名（例如：@astro_user）",
@@ -392,7 +392,7 @@
     "forecast_isnt_ready": "该星座的预测尚未准备好",
     "choose_another_sign": "请尝试选择其他星座或稍后再试",
     "get_daily_forecasts": "每天获取预测",
-    "get_in_telegram": "在您方便的时间直接发送至 Telegram",
+    "get_in_application": "在您方便的时间直接发送至 Telegram",
     "seven_days_free": "所有方案均享 7 天免费试用",
     "disclaimer": "内容仅供娱乐和激励参考，不构成财务、医疗或法律建议。"
   },
@@ -406,7 +406,7 @@
     "pending_title": "正在处理支付",
     "pending_description": "这可能需要几分钟。完成后我们会在机器人中发送通知。感谢您的耐心等待！",
     "what_is_next": "后续步骤：",
-    "open_the_bot": "在 Telegram 中打开 @Dailyastrobelarusbot",
+    "open_the_app": "在 Telegram 中打开 @Dailyastrobelarusbot",
     "press_start": "点击 /start 进行激活",
     "enjoy_forecasts": "开启您的每日预测之旅！",
     "open_bot_button": "在 Telegram 中打开机器人",
@@ -418,7 +418,7 @@
     "success_message": "您的订阅已激活。第一条预测将在明天早晨发送。",
     "seven_days_free": "7天免费试用",
     "cancel_anytime": "随时可以取消",
-    "open_the_bot": "在 Telegram 中打开机器人",
+    "open_the_app": "在 Telegram 中打开机器人",
     "homepage": "返回首页"
   },
   "ErrorPage": {

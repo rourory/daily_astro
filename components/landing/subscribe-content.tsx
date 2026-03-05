@@ -20,10 +20,13 @@ import {
   CreditCard,
   ChevronDown,
   Info,
+  Mail,
+  LockKeyhole,
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "@/lib/navigation";
-import { isValidTelegramUsername } from "@/lib/utils/is-valid-tg-username";
 import { Currency, Plan, PlanName, PlanPrice } from "@prisma/client";
 import { YookassaPaymentModal } from "./payment/yookassa-payment-modal";
 import {
@@ -99,22 +102,9 @@ const PAYMENT_METHODS: PaymentMethodOption[] = [
     currency: Currency.KZT,
     disabled: true,
   },
-  {
-    value: "stripe",
-    label: "Stripe (USD)",
-    currency: Currency.USD,
-    disabled: true,
-  },
-  {
-    value: "paypal",
-    label: "PayPal (USD)",
-    currency: Currency.USD,
-    disabled: true,
-  },
 ];
 
 // --- Helper Component: CustomSelect ---
-
 interface CustomSelectProps {
   value: string;
   onChange: (value: string) => void;
@@ -199,7 +189,7 @@ function CustomSelect({
 
 // --- Main Component ---
 
-export function SubscribeContent({ telegramId }: { telegramId?: string }) {
+export function SubscribeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentLocale = useLocale();
@@ -215,10 +205,12 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     return { ...sign, name: localized ? localized.name : sign.id };
   });
 
+  // Steps: 1=Zodiac, 2=Email Details, 3=OTP, 4=Plans/Payment
   const [step, setStep] = useState(1);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isPlansLoading, setIsPlansLoading] = useState(true);
-  const [isCheckingUser, setIsCheckingUser] = useState(false);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
   const [plans, setPlans] = useState<PlanWithPrices[]>([]);
 
   // Состояние статуса пользователя
@@ -237,14 +229,16 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
 
   const [formData, setFormData] = useState({
     zodiacSign: "",
-    telegramUsername: "",
+    email: "",
+    otpCode: "",
     plan: "",
-    amount: 0,
     locale: currentLocale,
     timezone: "Europe/Minsk",
     currency: Currency.RUB as Currency,
     paymentProvider: "yookassa" as PaymentProviderId,
   });
+
+  // --- Initial Effects ---
 
   useEffect(() => {
     try {
@@ -295,6 +289,8 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     }
   }, [searchParams, plans]);
 
+  // --- Helpers ---
+
   const formatPrice = (amount: number, currency: Currency) => {
     return new Intl.NumberFormat(formData.locale, {
       style: "currency",
@@ -304,26 +300,82 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     }).format(amount / 100);
   };
 
+  const isValidEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  // --- Logic Steps ---
+
+  // Шаг 2 -> 3: Отправка OTP
+  const handleSendOtp = async () => {
+    if (!isValidEmail(formData.email)) return;
+    setIsOtpLoading(true);
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Ошибка отправки кода");
+
+      setStep(3); // Переход к вводу кода
+    } catch (error: any) {
+      alert(error.message || "Ошибка отправки кода");
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  // Шаг 3 -> 4: Проверка OTP и проверка статуса юзера
+  const handleVerifyOtp = async () => {
+    if (formData.otpCode.length < 4) return;
+    setIsOtpLoading(true);
+    try {
+      // 1. Проверяем код
+      const verifyRes = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, code: formData.otpCode }),
+      });
+
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok) throw new Error(verifyData.error || "Неверный код");
+
+      // 2. Если код верен, проверяем статус пользователя (триал или нет)
+      await checkUserStatus();
+
+      setStep(4);
+    } catch (error: any) {
+      alert(error.message || "Ошибка проверки");
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
   const checkUserStatus = async () => {
-    setIsCheckingUser(true);
     try {
       const res = await fetch(
-        `/api/user/check-status?username=${encodeURIComponent(formData.telegramUsername)}`,
+        `/api/user/check-status?email=${encodeURIComponent(formData.email)}`,
       );
       if (res.ok) {
         const data = await res.json();
         setUserStatus(data);
-        setStep(3);
-      } else {
-        throw new Error("Failed to check status");
       }
     } catch (error) {
       console.error(error);
-      setStep(3); // Переходим даже при ошибке, но по дефолту будет триал
-    } finally {
-      setIsCheckingUser(false);
+      // Если ошибка, считаем что пользователь новый (дефолтное поведение)
+      setUserStatus({
+        exists: false,
+        isTrialEligible: true,
+        hasActiveSubscription: false,
+      });
     }
   };
+
+  // --- Payment Logic (Step 4) ---
 
   const selectedDbPlan = plans.find((p) => p.id === formData.plan);
   const i18nPlans = t.raw("plans") as I18nPlan[];
@@ -347,8 +399,10 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     }
   }
 
-  // Расчет цены "Сегодня" в зависимости от права на триал
-  const isEligibleForTrial = userStatus?.isTrialEligible !== false; // по умолчанию true
+  // Расчет цены "Сегодня"
+  // Если isTrialEligible === true -> цена 0
+  // Если isTrialEligible === false -> полная цена
+  const isEligibleForTrial = userStatus?.isTrialEligible ?? true;
   const todayAmount = isEligibleForTrial ? 0 : rawPriceAmount;
 
   const handleSubmit = async () => {
@@ -367,15 +421,15 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          telegram_username: formData.telegramUsername,
+          email: formData.email,
           zodiac_sign: formData.zodiacSign,
           plan_id: formData.plan,
           locale: formData.locale,
           timezone: formData.timezone,
           currency: formData.currency,
           paymentProvider: formData.paymentProvider,
-          amount: todayAmount, // Отправляем 0 если триал, иначе полную сумму
-          telegramId: telegramId,
+          // Отправляем ту сумму, которую насчитали (0 для триала, полная для покупки)
+          amount: todayAmount,
         }),
       });
 
@@ -400,6 +454,8 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
     }
   };
 
+  // --- Render ---
+
   return (
     <main className="min-h-[100dvh] bg-background">
       <header className="sticky top-0 z-50 glass border-b border-border/50">
@@ -411,7 +467,7 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex gap-1 flex-1">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -425,6 +481,7 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
       </header>
 
       <div className="max-w-lg mx-auto px-6 py-8">
+        {/* STEP 1: ZODIAC */}
         {step === 1 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <h1 className="font-serif text-2xl font-medium mb-2 text-center">
@@ -462,32 +519,34 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
           </div>
         )}
 
+        {/* STEP 2: EMAIL & DETAILS */}
         {step === 2 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             <h1 className="font-serif text-2xl font-medium mb-2 text-center">
               {t("your_details")}
             </h1>
+            <p className="text-sm text-muted-foreground text-center mb-8">
+              Укажите email для получения доступа
+            </p>
             <div className="space-y-6">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">{t("username")}</Label>
+                <Label className="text-sm font-medium flex items-center gap-1">
+                  <Mail className="w-3.5 h-3.5" /> Email
+                </Label>
                 <Input
-                  placeholder="@username"
-                  value={formData.telegramUsername}
+                  type="email"
+                  placeholder="name@example.com"
+                  value={formData.email}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      telegramUsername: e.target.value,
+                      email: e.target.value,
                     })
                   }
                   className="h-12 rounded-xl text-base glass"
                 />
-                {formData.telegramUsername &&
-                  !isValidTelegramUsername(formData.telegramUsername) && (
-                    <p className="text-xs text-red-500">
-                      {t("invalid_username")}
-                    </p>
-                  )}
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium flex items-center gap-1">
@@ -525,6 +584,7 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                 </div>
               </div>
             </div>
+
             <div className="flex gap-3 mt-8">
               <Button
                 variant="outline"
@@ -534,18 +594,15 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                 <ArrowLeft className="w-4 h-4 mr-2" /> {t("back")}
               </Button>
               <Button
-                onClick={checkUserStatus}
-                disabled={
-                  !isValidTelegramUsername(formData.telegramUsername) ||
-                  isCheckingUser
-                }
+                onClick={handleSendOtp}
+                disabled={!isValidEmail(formData.email) || isOtpLoading}
                 className="flex-1 py-6 rounded-2xl glow"
               >
-                {isCheckingUser ? (
+                {isOtpLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    {t("next")} <ArrowRight className="w-4 h-4 ml-2" />
+                    Отправить код <ArrowRight className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
@@ -553,26 +610,136 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
           </div>
         )}
 
+        {/* STEP 3: OTP VERIFICATION */}
+        {/* STEP 3: OTP VERIFICATION */}
         {step === 3 && (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-primary">
+                <LockKeyhole className="w-7 h-7" />
+              </div>
+              <h1 className="font-serif text-2xl font-medium mb-2">
+                Код подтверждения
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Мы отправили 6-значный код на <br />
+                <span className="text-foreground font-medium">
+                  {formData.email}
+                </span>
+              </p>
+            </div>
+
+            {/* OTP INPUT SLOTS */}
+            <div className="relative w-full max-w-[320px] mx-auto mb-8">
+              {/* 
+                  Невидимый инпут, который перехватывает фокус и ввод.
+                  Он растянут на всю ширину и высоту контейнера.
+              */}
+              <input
+                autoComplete="one-time-code"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={formData.otpCode}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  setFormData({ ...formData, otpCode: val });
+                }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20 font-mono"
+                disabled={isOtpLoading}
+                autoFocus
+              />
+
+              {/* Визуальные слоты */}
+              <div className="flex justify-between gap-2">
+                {[0, 1, 2, 3, 4, 5].map((index) => {
+                  const isActive = formData.otpCode.length === index;
+                  const isFilled = formData.otpCode.length > index;
+
+                  return (
+                    <div
+                      key={index}
+                      className={cn(
+                        "w-12 h-14 rounded-xl border flex items-center justify-center text-2xl font-bold transition-all duration-200 relative glass",
+                        // Если слот активен (ожидает ввода)
+                        isActive
+                          ? "border-primary ring-2 ring-primary/20 scale-105 z-10 bg-background"
+                          : "border-input/50",
+                        // Если слот заполнен
+                        isFilled &&
+                          "bg-muted/30 border-primary/50 text-foreground",
+                      )}
+                    >
+                      {/* Сама цифра */}
+                      <span className="font-mono">
+                        {formData.otpCode[index]}
+                      </span>
+
+                      {/* Мигающий курсор для активного слота */}
+                      {isActive && !isOtpLoading && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-0.5 h-6 bg-primary animate-pulse rounded-full" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={handleVerifyOtp}
+                disabled={formData.otpCode.length < 6 || isOtpLoading}
+                className="w-full py-6 rounded-2xl glow text-base"
+              >
+                {isOtpLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Подтвердить"
+                )}
+              </Button>
+
+              <div className="flex justify-between items-center px-1 mt-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStep(2)}
+                  className="text-muted-foreground h-auto p-0 hover:bg-transparent hover:text-foreground text-xs font-normal"
+                >
+                  <ArrowLeft className="w-3 h-3 mr-1.5" /> Изменить почту
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSendOtp}
+                  className="text-primary h-auto p-0 hover:bg-transparent hover:text-primary/80 text-xs font-normal"
+                >
+                  Отправить снова <RefreshCw className="w-3 h-3 ml-1.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: PLANS & PAYMENT */}
+        {step === 4 && (
           <div className="animate-in fade-in slide-in-from-right-4 duration-300">
             {userStatus?.hasActiveSubscription ? (
               <div className="text-center space-y-6 py-4">
-                <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto text-primary">
+                <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto text-green-500">
                   <Check className="w-8 h-8" />
                 </div>
                 <h1 className="font-serif text-2xl font-medium">
                   {t("subscription_is_already_active_head")}
                 </h1>
                 <p className="text-muted-foreground">
-                  {t("subscription_is_already_active")}
+                  У вас уже есть активная подписка на аккаунте {formData.email}.
                 </p>
                 <Button asChild className="w-full py-6 rounded-2xl glow">
-                  <a href="https://t.me/Dailyastrobelarusbot">
-                    {t("open_tg_bot")}
-                  </a>
-                </Button>
-                <Button variant="ghost" onClick={() => setStep(2)}>
-                  {t("back_to_details")}
+                  <Link href="/dashboard">Перейти в личный кабинет</Link>
                 </Button>
               </div>
             ) : (
@@ -580,12 +747,22 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                 <h1 className="font-serif text-2xl font-medium mb-2 text-center">
                   {t("choose_pricing")}
                 </h1>
-                <p className="text-sm text-muted-foreground text-center mb-6">
+
+                {/* Сообщение о статусе (Триал или Покупка) */}
+                <div
+                  className={cn(
+                    "text-sm text-center mb-6 py-2 px-3 rounded-xl border",
+                    isEligibleForTrial
+                      ? "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400"
+                      : "bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400",
+                  )}
+                >
                   {isEligibleForTrial
                     ? t("seven_days_free")
-                    : "Пробный период уже использован. Выберите подходящий тариф."}
-                </p>
+                    : "Вы уже использовали пробный период. Для продолжения выберите тариф."}
+                </div>
 
+                {/* Payment Provider Selector */}
                 <div className="mb-6 flex justify-center">
                   <div className="w-full max-w-[240px] relative">
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10 pointer-events-none">
@@ -606,6 +783,7 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                   </div>
                 </div>
 
+                {/* Plans List */}
                 {isPlansLoading ? (
                   <div className="flex justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -697,6 +875,7 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                   </div>
                 )}
 
+                {/* Summary Box */}
                 <div className="mt-6 p-4 rounded-2xl glass">
                   <div className="flex justify-between mb-2">
                     <span className="text-muted-foreground">
@@ -707,21 +886,29 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                     </span>
                   </div>
 
-                  {isEligibleForTrial && (
+                  {isEligibleForTrial ? (
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
                         {t("seven_days_free_short")}
                       </span>
-                      <span className="text-green-400">
+                      <span className="text-green-500 font-medium">
                         - {selectedPriceDisplay}
                       </span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Скидка</span>
+                      <span className="text-muted-foreground">0</span>
                     </div>
                   )}
 
                   <div className="border-t border-border/50 mt-3 pt-3 flex justify-between font-medium">
                     <span>{t("today")}</span>
                     <span
-                      className={cn(todayAmount === 0 ? "text-green-400" : "")}
+                      className={cn(
+                        "text-lg",
+                        todayAmount === 0 ? "text-green-500" : "",
+                      )}
                     >
                       {todayAmount === 0
                         ? new Intl.NumberFormat(formData.locale, {
@@ -733,18 +920,15 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                   </div>
                 </div>
 
-                {/* Информационный блок о проверке карты */}
                 <div className="mt-4 p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 flex gap-3 text-[11px] leading-snug text-blue-200/80">
                   <Info className="w-4 h-4 shrink-0 text-blue-400" />
-                  <p>
-                    {t("cash_retention_message")}
-                  </p>
+                  <p>{t("cash_retention_message")}</p>
                 </div>
 
                 <div className="flex gap-3 mt-6">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(2)}
+                    onClick={() => setStep(2)} // Return to step 2 to allow email change (logic allows going back to 3/2)
                     className="flex-1 py-6 rounded-2xl glass border-0"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" /> {t("back")}
@@ -761,9 +945,7 @@ export function SubscribeContent({ telegramId }: { telegramId?: string }) {
                       </>
                     ) : (
                       <>
-                        {isEligibleForTrial
-                          ? t("start_free")
-                          : "Оплатить подписку"}{" "}
+                        {isEligibleForTrial ? t("start_free") : "Оплатить"}{" "}
                         <Sparkles className="w-4 h-4 ml-2" />
                       </>
                     )}

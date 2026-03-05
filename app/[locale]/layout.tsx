@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import "../globals.css";
+import InstallPWAOrLoginButton from "@/components/landing/pwa-smart-button";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 const playfair = Playfair_Display({
@@ -13,43 +14,43 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Daily Astro — Ежедневные гороскопы в Telegram",
-  description:
-    "Персональные гороскопы каждый день в Telegram. Любовь, деньги, настроение, совет дня. 7 дней бесплатно.",
-  keywords: [
-    "гороскоп",
-    "астрология",
-    "telegram",
-    "ежедневный прогноз",
-    "знак зодиака",
-    "гороскоп на сегодня",
-  ],
-  authors: [{ name: "Daily Astro" }],
-  metadataBase: new URL("https://dailyastro.site"),
-  icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
-  },
-  openGraph: {
-    title: "Daily Astro — Ежедневные гороскопы в Telegram",
-    description: "Персональные гороскопы каждый день. Коротко. Точно. Вовремя.",
-    type: "website",
-    locale: "ru_RU",
-    siteName: "Daily Astro",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Daily Astro — Ежедневные гороскопы",
-    description: "Персональные гороскопы каждый день в Telegram",
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  generator: "v0.app",
-};
+// export const metadata: Metadata = {
+//   title: "Daily Astro — Ежедневные гороскопы в Telegram",
+//   description:
+//     "Персональные гороскопы каждый день в Telegram. Любовь, деньги, настроение, совет дня. 7 дней бесплатно.",
+//   keywords: [
+//     "гороскоп",
+//     "астрология",
+//     "telegram",
+//     "ежедневный прогноз",
+//     "знак зодиака",
+//     "гороскоп на сегодня",
+//   ],
+//   authors: [{ name: "Daily Astro" }],
+//   metadataBase: new URL("https://dailyastro.site"),
+//   icons: {
+//     icon: "/favicon.svg",
+//     shortcut: "/favicon.svg",
+//     apple: "/favicon.svg",
+//   },
+//   openGraph: {
+//     title: "Daily Astro — Ежедневные гороскопы в Telegram",
+//     description: "Персональные гороскопы каждый день. Коротко. Точно. Вовремя.",
+//     type: "website",
+//     locale: "ru_RU",
+//     siteName: "Daily Astro",
+//   },
+//   twitter: {
+//     card: "summary_large_image",
+//     title: "Daily Astro — Ежедневные гороскопы",
+//     description: "Персональные гороскопы каждый день в Telegram",
+//   },
+//   robots: {
+//     index: true,
+//     follow: true,
+//   },
+//   generator: "v0.app",
+// };
 
 export const viewport: Viewport = {
   themeColor: "#0a0a14",
@@ -61,23 +62,18 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({
   children,
-  params,
 }: Readonly<{
   children: React.ReactNode;
-  params: Promise<{ locale: string }>;
 }>) {
   const messages = await getMessages();
-  const { locale } = await params;
   return (
-    <html lang={locale} className="scroll-smooth">
-      <body
-        className={`${inter.className} ${playfair.variable} font-sans antialiased`}
-      >
-        <NextIntlClientProvider messages={messages}>
-          {children}
-        </NextIntlClientProvider>
-        <Analytics />
-      </body>
-    </html>
+    <div
+      className={`${inter.className} ${playfair.variable} font-sans antialiased`}
+    >
+      <NextIntlClientProvider messages={messages}>
+        {children}
+      </NextIntlClientProvider>
+      <Analytics />
+    </div>
   );
 }

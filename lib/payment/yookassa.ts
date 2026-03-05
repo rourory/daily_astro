@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 
 export interface YookassaPaymentMetadata {
-  email?: string;
+  email?: string | null;
   subscriptionId?: string;
   isRecurring?: string;
   recurringPeriod?: string;

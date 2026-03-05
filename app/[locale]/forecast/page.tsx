@@ -1,251 +1,256 @@
-import prisma from "@/lib/prisma";
-import {
-  Heart,
-  Wallet,
-  Smile,
-  Lightbulb,
-  Star,
-  ArrowRight,
-} from "lucide-react";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { getTranslations, getLocale } from "next-intl/server";
+import { verifySession } from "@/lib/auth/jwt";
+import { getUserForecast } from "@/lib/services/forecast";
+import { PlanName } from "@prisma/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { getLocale, getTranslations } from "next-intl/server";
-import { ZODIAC_SIGNS } from "@/lib/types/enums";
-import { ForecastTranslation } from "@prisma/client";
+import { Card } from "@/components/ui/card";
 import { Link } from "@/lib/navigation";
+import { 
+  Heart, Wallet, Smile, Lightbulb, 
+  Lock, Sparkles, Crown, ArrowRight, Star
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export const dynamic = "force-dynamic";
+// Иконки для блоков
+const ICONS = {
+  love: Heart,
+  money: Wallet,
+  mood: Smile,
+  advice: Lightbulb,
+};
 
-const BLOCKS_CONFIG = [
-  {
-    key: "love",
-    icon: Heart,
-    color: "text-rose-400",
-    bg: "bg-rose-400/10",
-  },
-  {
-    key: "money",
-    icon: Wallet,
-    color: "text-emerald-400",
-    bg: "bg-emerald-400/10",
-  },
-  {
-    key: "mood",
-    icon: Smile,
-    color: "text-amber-400",
-    bg: "bg-amber-400/10",
-  },
-  {
-    key: "advice",
-    icon: Lightbulb,
-    color: "text-primary",
-    bg: "bg-primary/10",
-  },
-];
+// Компонент "Замка" для платного контента
+function LockedBlock({ 
+  title, 
+  icon: Icon, 
+  requiredPlan,
+  description 
+}: { 
+  title: string; 
+  icon: any; 
+  requiredPlan: "Plus" | "Premium";
+  description: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl glass border border-white/5 p-6 h-full min-h-[160px] flex flex-col justify-between group">
+      {/* Размытый фон (имитация контента) */}
+      <div className="absolute inset-0 bg-muted/10 blur-xl group-hover:bg-muted/20 transition-all" />
+      
+      <div className="relative z-10 flex items-start justify-between opacity-50">
+         <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+              <Icon className="w-5 h-5" />
+            </div>
+            <span className="font-medium">{title}</span>
+         </div>
+      </div>
 
-async function getForecasts(locale: string) {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const forecasts = await prisma.forecast.findMany({
-      where: {
-        forecastDate: {
-          gte: today,
-          lt: tomorrow,
-        },
-        translations: {
-          some: {
-            locale,
-          },
-        },
-      },
-      select: {
-        zodiacSign: true,
-        translations: true,
-      },
-    });
-    return forecasts;
-  } catch (error) {
-    console.error("Error fetching forecasts:", error);
-    return [];
-  }
+      <div className="relative z-10 mt-4">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+           <div className="w-12 h-12 bg-black/20 backdrop-blur-md rounded-full flex items-center justify-center mb-2 shadow-inner">
+             <Lock className="w-5 h-5 text-white/70" />
+           </div>
+           <p className="text-xs font-medium text-muted-foreground mb-3 px-4">
+             {description}
+           </p>
+           <Button size="sm" variant="default" className="h-8 text-xs rounded-full px-4" asChild>
+             <Link href="/subscribe">Открыть {requiredPlan}</Link>
+           </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default async function ForecastPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ sign?: string }>;
-}) {
-  const params = await searchParams;
+export default async function ForecastPage() {
   const locale = await getLocale();
-  const forecasts = await getForecasts(locale);
-
-  const tCommon = await getTranslations("Common");
   const t = await getTranslations("ForecastPage");
+  
+  // 1. Проверка сессии
+  const token = (await cookies()).get("session_token")?.value;
+  if (!token) redirect("/login?callbackUrl=/forecast");
 
-  const localizedZodiacSigns = tCommon.raw("zodiac_signs_array") as {
-    id: string;
-    name: string;
-  }[];
-  const zodiacSigns = ZODIAC_SIGNS.map((sign) => {
-    const localized = localizedZodiacSigns.find((s) => s.id === sign.id);
-    return {
-      ...sign,
-      name: localized ? localized.name : sign.id,
-    };
-  });
+  const session = await verifySession(token);
+  if (!session) redirect("/login?callbackUrl=/forecast");
 
-  const localizedBlocks = t.raw("blocks") as {
-    key: string;
-    title: string;
-  }[];
+  // 2. Загрузка данных
+  const { status, data, userPlan, userSign } = await getUserForecast(session.userId, locale);
 
-  const selectedSign = params.sign || "leo";
+  // Обработка пограничных состояний
+  if (status === "no_zodiac") redirect("/subscribe"); // Или на страницу выбора знака
+  if (status === "no_forecast") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+        <h1 className="text-2xl font-serif mb-2">Звезды еще спят ✨</h1>
+        <p className="text-muted-foreground mb-6">Прогноз для вашего знака на сегодня еще формируется.</p>
+        <Button asChild><Link href="/">На главную</Link></Button>
+      </div>
+    );
+  }
 
-  const forecast = forecasts.find((f) => f.zodiacSign === selectedSign);
-  const sign = zodiacSigns.find((s) => s.id === selectedSign)!;
+  // Определяем уровни доступа
+  const isBasic = userPlan === PlanName.basic;
+  const isPlus = userPlan === PlanName.plus;
+  const isPremium = userPlan === PlanName.premium;
 
-  const today = new Date().toLocaleDateString(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-
-  const blocks = BLOCKS_CONFIG.map((block) => ({
-    ...block,
-    title:
-      localizedBlocks.find((b) => b.key === block.key)?.title ||
-      block.key.charAt(0).toUpperCase() + block.key.slice(1),
-  }));
+  const showPlusContent = isPlus || isPremium;
+  const showPremiumContent = isPremium;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Star className="w-4 h-4 text-primary" />
-            </div>
-            <span className="font-serif text-lg">Daily Astro</span>
-          </Link>
-          <Button
-            size="sm"
-            className="bg-primary text-primary-foreground"
-            asChild
-          >
-            <Link href="/subscribe">{t("subscribe")}</Link>
-          </Button>
+    <main className="min-h-screen bg-background pb-20">
+      {/* --- HEADER --- */}
+      <header className="pt-8 pb-6 px-4 text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
+          <Star className="w-3.5 h-3.5 fill-current" />
+          <span>Гороскоп на сегодня</span>
         </div>
+        <h1 className="text-3xl md:text-4xl font-serif font-medium mb-2 capitalize">
+          {userSign}
+        </h1>
+        <p className="text-muted-foreground">
+          {new Date(data.date).toLocaleDateString(locale, { day: 'numeric', month: 'long', weekday: 'long' })}
+        </p>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        {/* Title */}
-        <div className="text-center mb-8">
-          <h1 className="font-serif text-3xl md:text-4xl font-medium mb-2">
-            {t("today_forecast")}
-          </h1>
-          <p className="text-muted-foreground capitalize">{today}</p>
-        </div>
-
-        {/* Zodiac selector */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10 max-w-4xl mx-auto">
-          {zodiacSigns.map((zodiac) => (
-            <Link
-              key={zodiac.id}
-              href={`/forecast?sign=${zodiac.id}`}
-              className={`px-3 py-2 rounded-lg text-sm transition-all ${
-                selectedSign === zodiac.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <span className="mr-1">{zodiac.symbol}</span>
-              <span className="hidden sm:inline">{zodiac.name}</span>
-            </Link>
-          ))}
-        </div>
-
-        {/* Forecast card */}
-        <div className="max-w-2xl mx-auto">
-          <Card className="bg-card border-border/50 overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary/20 to-primary/5 p-6 flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-background/50 flex items-center justify-center">
-                <span className="text-4xl">{sign.symbol}</span>
+      <div className="max-w-4xl mx-auto px-4 space-y-4 md:space-y-6">
+        
+        {/* --- BASIC GRID (Always Visible) --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="p-6 rounded-3xl bg-gradient-to-br from-rose-500/10 to-transparent border-white/5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-500 flex items-center justify-center">
+                <Heart className="w-5 h-5" />
               </div>
-              <div>
-                <h2 className="text-2xl font-serif font-medium">{sign.name}</h2>
-                <p className="text-muted-foreground text-sm">
-                  {t("today_forecast")}
-                </p>
-              </div>
+              <h3 className="font-semibold text-lg">Любовь</h3>
             </div>
-
-            <CardContent className="p-6">
-              {forecast ? (
-                <div className="space-y-6">
-                  {blocks.map((block) => (
-                    <div key={block.key} className="flex gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-xl ${block.bg} flex items-center justify-center shrink-0`}
-                      >
-                        <block.icon className={`w-6 h-6 ${block.color}`} />
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-1">{block.title}</h3>
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                          {forecast.translations[0][
-                            block.key as keyof ForecastTranslation
-                          ]?.toString() || t("no_data")}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    {t("forecast_isnt_ready")}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {t("choose_another_sign")}
-                  </p>
-                </div>
-              )}
-
-              {/* CTA */}
-              <div className="mt-8 p-4 bg-primary/5 rounded-xl border border-primary/20">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div>
-                    <p className="font-medium">{t("get_daily_forecasts")}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {t("get_in_telegram")}
-                    </p>
-                  </div>
-                  <Button
-                    className="bg-primary text-primary-foreground whitespace-nowrap"
-                    asChild
-                  >
-                    <Link href="/subscribe" className="flex items-center gap-2">
-                      {t("seven_days_free")}
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
+            <p className="text-muted-foreground leading-relaxed">{data.love}</p>
           </Card>
 
-          {/* Disclaimer */}
-          <p className="text-center text-xs text-muted-foreground mt-6">
-            {t("disclaimer")}
-          </p>
+          <Card className="p-6 rounded-3xl bg-gradient-to-br from-emerald-500/10 to-transparent border-white/5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-500 flex items-center justify-center">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-lg">Финансы</h3>
+            </div>
+            <p className="text-muted-foreground leading-relaxed">{data.money}</p>
+          </Card>
+
+           <Card className="p-6 rounded-3xl bg-gradient-to-br from-amber-500/10 to-transparent border-white/5">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center">
+                <Smile className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-lg">Настроение</h3>
+            </div>
+            <p className="text-muted-foreground leading-relaxed">{data.mood}</p>
+          </Card>
+
+          <Card className="p-6 rounded-3xl bg-primary/5 border-primary/10 border">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center">
+                <Lightbulb className="w-5 h-5" />
+              </div>
+              <h3 className="font-semibold text-lg">Совет дня</h3>
+            </div>
+            <p className="text-foreground/90 font-medium leading-relaxed italic">
+              "{data.advice}"
+            </p>
+          </Card>
         </div>
-      </main>
-    </div>
+
+        {/* --- PLUS CONTENT (Affirmation & Compatibility) --- */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {showPlusContent ? (
+            <Card className="p-6 rounded-3xl glass border-white/5 col-span-1 md:col-span-2 relative overflow-hidden">
+               <div className="absolute top-0 right-0 p-4 opacity-5">
+                 <Sparkles className="w-24 h-24" />
+               </div>
+               <div className="relative z-10">
+                 <div className="flex items-center gap-2 mb-2 text-purple-400">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-xs font-bold tracking-wider uppercase">Аффирмация</span>
+                 </div>
+                 <p className="text-xl md:text-2xl font-serif text-center py-4 text-purple-100">
+                   «{data.affirmation}»
+                 </p>
+               </div>
+            </Card>
+          ) : (
+            <div className="col-span-1 md:col-span-2 h-[180px]">
+              <LockedBlock 
+                title="Аффирмация дня" 
+                icon={Sparkles} 
+                requiredPlan="Plus" 
+                description="Мощная установка для вашего подсознания"
+              />
+            </div>
+          )}
+
+          {showPlusContent && data.compatibility ? (
+             // Здесь можно сделать красивый компонент для совместимости
+             <Card className="p-6 rounded-3xl glass border-white/5">
+                <h3 className="font-semibold mb-4">Совместимость сегодня</h3>
+                <div className="space-y-3">
+                   {/* Пример рендера JSON данных */}
+                   <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">В любви</span>
+                      <span className="font-medium">{data.compatibility.love || "—"}</span>
+                   </div>
+                   <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">В делах</span>
+                      <span className="font-medium">{data.compatibility.work || "—"}</span>
+                   </div>
+                </div>
+             </Card>
+          ) : !showPlusContent ? (
+            // Блок совместимости (закрыт) - можно добавить во вторую колонку, 
+            // если Аффирмация не занимает всю ширину, или скрыть.
+            null
+          ) : null}
+        </div>
+
+        {/* --- PREMIUM CONTENT (Lucky Metrics & Tomorrow) --- */}
+        <div className="grid grid-cols-1 gap-4">
+           {showPremiumContent ? (
+              <div className="p-6 rounded-3xl bg-gradient-to-r from-indigo-900/50 to-blue-900/50 border border-indigo-500/20">
+                 <div className="flex items-center gap-2 mb-4 text-indigo-300">
+                    <Crown className="w-5 h-5" />
+                    <h3 className="font-semibold">Инсайт на завтра</h3>
+                 </div>
+                 <p className="leading-relaxed text-indigo-50">
+                    {data.tomorrowInsight}
+                 </p>
+              </div>
+           ) : (
+             <div className="h-[200px]">
+                <LockedBlock 
+                  title="Взгляд в завтра" 
+                  icon={Crown} 
+                  requiredPlan="Premium" 
+                  description="Узнайте заранее, к чему готовиться завтра"
+                />
+             </div>
+           )}
+        </div>
+
+        {/* --- UPSELL FOOTER (If not Premium) --- */}
+        {!isPremium && (
+          <div className="mt-8 p-6 rounded-3xl bg-gradient-to-r from-primary/20 via-primary/10 to-transparent border border-primary/20 text-center">
+             <h3 className="text-lg font-semibold mb-2">Хотите знать больше?</h3>
+             <p className="text-muted-foreground text-sm mb-4">
+               Откройте доступ ко всем аспектам прогноза с подпиской Premium.
+             </p>
+             <Button className="glow rounded-full px-8" size="lg" asChild>
+               <Link href="/subscribe">
+                 Улучшить тариф <ArrowRight className="w-4 h-4 ml-2" />
+               </Link>
+             </Button>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

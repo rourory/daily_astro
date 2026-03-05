@@ -69,7 +69,7 @@ async function CheckoutStatusContent({
             <ol className="text-sm text-muted-foreground space-y-2">
               <li className="flex gap-2">
                 <span className="text-primary font-medium">1.</span>
-                {t("open_the_bot")}
+                {t("open_the_app")}
               </li>
               <li className="flex gap-2">
                 <span className="text-primary font-medium">2.</span>

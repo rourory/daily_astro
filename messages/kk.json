@@ -169,7 +169,7 @@
     "about_your_future": "күніңіз туралы",
     "get_personal_hooscope": "Әр таң сайын Telegram-да жеке жұлдыз жорамалын алыңыз",
     "try_for_free": "Тегін байқап көру",
-    "open_on_telegram": "Telegram-да ашу",
+    "open_on_app": "Telegram-да ашу",
     "free_period_one_click_cancel": "7 күн тегін • Бір басумен бас тарту"
   },
   "FeaturesSection": {
@@ -218,7 +218,7 @@
   },
   "FooterSection": {
     "personalized_horoscope": "Telegram-дағы жеке жұлдыз жорамалдар",
-    "open_on_telegram": "Ботты ашу",
+    "open_on_app": "Ботты ашу",
     "pricing": "Тарифтер",
     "free_forecast": "Тегін болжам",
     "made_with": "Сүйіспеншілікпен жасалған",
@@ -364,7 +364,7 @@
     "timezone": "Уақыт белдеуі",
     "your_sign": "Сіздің белгіңіз",
     "choose_your_sign": "Белгіңізді таңдаңыз",
-    "your_telegram": "Сіздің Telegram",
+    "your_email": "Сіздің Telegram",
     "where_to_send_forecast": "Болжамдарды қайда жіберу керек",
     "username": "Пайдаланушы аты",
     "invalid_username": "Дұрыс Telegram username енгізіңіз (мысалы: @astro_user)",
@@ -416,7 +416,7 @@
     "forecast_isnt_ready": "Бұл белгі үшін болжам әлі дайын емес",
     "choose_another_sign": "Басқа белгіні таңдап көріңіз немесе кейінірек кіріңіз",
     "get_daily_forecasts": "Күн сайын болжамдарды алыңыз",
-    "get_in_telegram": "Ыңғайлы уақытта тікелей Telegram-ға",
+    "get_in_application": "Ыңғайлы уақытта тікелей Telegram-ға",
     "seven_days_free": "Кез келген тарифте 7 күн тегін",
     "disclaimer": "Ойын-сауық және мотивациялық мазмұн. Қаржылық, медициналық немесе заңгерлік кеңес болып табылмайды."
   },
@@ -430,7 +430,7 @@
     "pending_title": "Төлем өңделуде",
     "pending_description": "Бұл бірнеше минут алуы мүмкін. Біз ботқа хабарлама жібереміз. Сабырлығыңызға рақмет!",
     "what_is_next": "Келесі қадамдар:",
-    "open_the_bot": "Telegram-да @Dailyastrobelarusbot ботын ашыңыз",
+    "open_the_app": "Telegram-да @Dailyastrobelarusbot ботын ашыңыз",
     "press_start": "Белсендіру үшін /start басыңыз",
     "enjoy_forecasts": "Күнделікті болжамдарды тамашалаңыз!",
     "open_bot_button": "Ботты Telegram-да ашу",
@@ -442,7 +442,7 @@
     "success_message": "Жазылымыңыз белсендірілді. Алғашқы болжам ертең таңертең келеді.",
     "seven_days_free": "7 күн тегін",
     "cancel_anytime": "Кез келген уақытта бас тарту",
-    "open_the_bot": "Ботты Telegram-да ашу",
+    "open_the_app": "Ботты Telegram-да ашу",
     "homepage": "Басты бетке"
   },
   "ErrorPage": {

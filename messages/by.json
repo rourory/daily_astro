@@ -202,7 +202,7 @@
     "about_your_future": "о вашем дне",
     "get_personal_hooscope": "Получайте персональный гороскоп каждое утро в Telegram",
     "try_for_free": "Попробовать бесплатно",
-    "open_on_telegram": "Открыть в Telegram",
+    "open_on_app": "Открыть в приложении",
     "free_period_one_click_cancel": "7 дней бесплатно • Отмена в один клик"
   },
   "FeaturesSection": {
@@ -263,7 +263,7 @@
   },
   "FooterSection": {
     "personalized_horoscope": "Персональные гороскопы в Telegram",
-    "open_on_telegram": "Открыть бота",
+    "open_on_app": "Открыть приложение",
     "pricing": "Тарифы",
     "free_forecast": "Бесплатный прогноз",
     "made_with": "Сделано с",
@@ -409,7 +409,7 @@
     "timezone": "Часовой пояс",
     "your_sign": "Ваш знак зодиака",
     "choose_your_sign": "Выберите свой знак",
-    "your_telegram": "Ваш Telegram",
+    "your_email": "Ваш Telegram",
     "where_to_send_forecast": "Куда отправлять прогнозы",
     "username": "Имя пользователя",
     "invalid_username": "Введите корректный Telegram username (например: @astro_user)",
@@ -477,7 +477,7 @@
     "forecast_isnt_ready": "Прогноз для этого знака ещё не готов",
     "choose_another_sign": "Попробуйте выбрать другой знак или зайдите позже",
     "get_daily_forecasts": "Получайте прогнозы каждый день",
-    "get_in_telegram": "Прямо в Telegram в удобное время",
+    "get_in_application": "Прямо в Telegram в удобное время",
     "seven_days_free": "7 дней бесплатно на любом тарифе",
     "disclaimer": "Развлекательный и мотивационный контент. Не является советом по финансовым, медицинским или юридическим вопросам."
   },
@@ -491,7 +491,7 @@
     "pending_title": "Обрабатываем платёж",
     "pending_description": "Это может занять несколько минут. Мы пришлём уведомление в бот. Спасибо за терпение!",
     "what_is_next": "Что дальше:",
-    "open_the_bot": "Откройте бота @Dailyastrobelarusbot в Telegram",
+    "open_the_app": "Откройте бота @Dailyastrobelarusbot в Telegram",
     "press_start": "Нажмите /start для активации",
     "enjoy_forecasts": "Наслаждайтесь ежедневными прогнозами!",
     "open_bot_button": "Открыть бота в Telegram",
@@ -503,7 +503,7 @@
     "success_message": "Ваша подписка активирована. Первый прогноз придёт завтра утром.",
     "seven_days_free": "7 дней бесплатно",
     "cancel_anytime": "Отмена в любой момент",
-    "open_the_bot": "Открыть бота в Telegram",
+    "open_the_app": "Открыть бота в Telegram",
     "homepage": "На главную"
   },
   "ErrorPage": {

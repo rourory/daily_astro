@@ -7,6 +7,8 @@ import { ZodiacIcons } from "./zodiac-icons";
 import { useTranslations } from "next-intl";
 import { ZODIAC_SIGNS } from "@/lib/types/enums";
 import { Link } from "@/lib/navigation";
+import InstallPWAOrLoginButton from "./pwa-smart-button";
+import SmartPWAActionButton from "./pwa-smart-button";
 
 function CosmicBackground() {
   const [stars, setStars] = useState<
@@ -61,11 +63,16 @@ function CosmicBackground() {
   );
 }
 
-export function HeroSection() {
+interface HeroSectionProps {
+  isLoggedIn?: boolean;
+}
+
+export function HeroSection({ isLoggedIn = false }: HeroSectionProps) {
   const [activeSign, setActiveSign] = useState(0);
   const [mounted, setMounted] = useState(false);
-
   const t = useTranslations("HeroSection");
+
+  console.log(isLoggedIn);
 
   const tCommon = useTranslations("Common");
   const localizedZodiacSigns = tCommon.raw("zodiac_signs_array") as {
@@ -123,34 +130,23 @@ export function HeroSection() {
 
         {/* Primary CTA */}
         <div className="space-y-4 mb-10">
-          <Button
-            size="lg"
-            className="w-full text-lg py-7 bg-primary text-primary-foreground hover:bg-primary/90 glow rounded-2xl font-medium transition-all active:scale-[0.98]"
-            asChild
-          >
-            <Link
-              href="/subscribe"
-              className="flex items-center justify-center gap-3"
+          {!isLoggedIn && (
+            <Button
+              size="lg"
+              className="w-full text-lg py-7 bg-primary text-primary-foreground hover:bg-primary/90 glow rounded-2xl font-medium transition-all active:scale-[0.98]"
+              asChild
             >
-              <Sparkles className="w-5 h-5" />
-              {t("try_for_free")}
-            </Link>
-          </Button>
+              <Link
+                href="/subscribe"
+                className="flex items-center justify-center gap-3"
+              >
+                <Sparkles className="w-5 h-5" />
+                {t("try_for_free")}
+              </Link>
+            </Button>
+          )}
 
-          <Button
-            size="lg"
-            variant="ghost"
-            className="w-full text-base py-6 glass hover:bg-white/10 rounded-2xl transition-all"
-            asChild
-          >
-            <a
-              href="https://t.me/Dailyastrobelarusbot"
-              className="flex items-center justify-center gap-2"
-            >
-              <Send className="w-4 h-4" />
-              {t("open_on_telegram")}
-            </a>
-          </Button>
+          <SmartPWAActionButton isLoggedIn={isLoggedIn} />
         </div>
 
         {/* Trust badge */}
