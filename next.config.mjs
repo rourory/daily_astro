@@ -12,6 +12,11 @@ const withPWA = nextPWA({
   workboxOptions: {
     disableDevLogs: true,
   },
+  swSrc: "worker/index.ts",
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  swcMinify: true,
 });
 
 /** @type {import('next').NextConfig} */

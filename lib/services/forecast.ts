@@ -1,9 +1,32 @@
 import prisma from "@/lib/prisma";
-import { PlanName } from "@prisma/client";
+import { PlanName, ZodiacSign } from "@prisma/client";
+
+export interface ForecastData {
+  date: Date;
+  sign: ZodiacSign;
+
+  // Basic
+  love: string;
+  money: string;
+  mood: string;
+  advice: string;
+
+  // Plus
+  affirmation: string;
+  compatibility: { sign: ZodiacSign; text: string };
+
+  // Premium
+  luckyMetrics: {
+    time: string;
+    color: "string";
+    number: number;
+  };
+  tomorrowInsight: string;
+}
 
 export type ForecastResult = {
   status: "success" | "no_user" | "no_zodiac" | "no_forecast";
-  data?: any;
+  data?: ForecastData;
   userPlan?: PlanName;
   userSign?: string;
 };
@@ -91,10 +114,14 @@ export async function getUserForecast(
 
     // Plus
     affirmation: t.affirmation,
-    compatibility: t.compatibility, // JSON
+    compatibility: t.compatibility as { sign: ZodiacSign; text: string },
 
     // Premium
-    luckyMetrics: forecast.luckyMetrics, // JSON
+    luckyMetrics: forecast.luckyMetrics as {
+      time: string;
+      color: "string";
+      number: number;
+    },
     tomorrowInsight: t.tomorrowInsight,
   };
 
