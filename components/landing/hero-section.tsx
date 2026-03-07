@@ -72,8 +72,6 @@ export function HeroSection({ isLoggedIn = false }: HeroSectionProps) {
   const [mounted, setMounted] = useState(false);
   const t = useTranslations("HeroSection");
 
-  console.log(isLoggedIn);
-
   const tCommon = useTranslations("Common");
   const localizedZodiacSigns = tCommon.raw("zodiac_signs_array") as {
     id: string;

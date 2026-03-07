@@ -358,7 +358,7 @@ export function SubscribeContent() {
   const checkUserStatus = async () => {
     try {
       const res = await fetch(
-        `/api/user/check-status?email=${encodeURIComponent(formData.email)}`,
+        `/api/user/check-status`,
       );
       if (res.ok) {
         const data = await res.json();

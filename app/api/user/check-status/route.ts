@@ -1,9 +1,25 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { verifySession } from "@/lib/auth/jwt";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const email = searchParams.get("email");
+  // 1. Получаем токен из куки (приоритет) или заголовка
+  const cookieToken = (await cookies()).get("session_token")?.value;
+  const authHeader = req.headers.get("authorization")?.split(" ")[1];
+  const token = cookieToken || authHeader;
+
+  if (!token) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2. Проверяем сессию
+  const payload = await verifySession(token);
+  if (!payload?.userId) {
+    return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+  }
+
+  const email = payload.email;
 
   if (!email) {
     return NextResponse.json({ error: "Email is required" }, { status: 400 });

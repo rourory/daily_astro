@@ -143,7 +143,7 @@ export function PushManager({ userId }: PushManagerProps) {
             ) : subscription ? (
               "Активно"
             ) : (
-              "Включить уведомления"
+              "Включить push-уведомления"
             )}
           </p>
         </div>

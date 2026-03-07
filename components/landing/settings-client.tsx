@@ -1,5 +1,7 @@
+// components/landing/settings-client.tsx
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -8,31 +10,64 @@ import {
   ShieldCheck,
   Smartphone,
   ChevronRight,
+  Mail,
+  Loader2,
 } from "lucide-react";
-import { Link } from "@/lib/navigation"; // Или "next/link", если не используете next-intl
+import { Link } from "@/lib/navigation";
 import { PushManager } from "@/components/push-manager";
+import { cn } from "@/lib/utils";
 
 interface SettingsClientProps {
   user: {
     id: string;
     email: string;
-    // Добавьте другие поля, если они есть в session
+    emailNotification: boolean; // Обязательное поле для пропсов
   };
 }
 
 export function SettingsClient({ user }: SettingsClientProps) {
   const router = useRouter();
 
+  // Локальные состояния для Email-переключателя
+  const [isEmailEnabled, setIsEmailEnabled] = useState(user.emailNotification);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
+
   const handleLogout = async () => {
     try {
-      // Предполагаем, что есть API роут для выхода
       await fetch("/api/auth/logout", { method: "POST" });
-      router.refresh(); // Обновляем данные
-      router.push("/login"); // Редирект
+      router.refresh();
+      router.push("/login");
     } catch (error) {
       console.error("Logout failed", error);
-      // Фолбэк редирект
       router.push("/login");
+    }
+  };
+
+  const toggleEmailNotifications = async () => {
+    setIsEmailLoading(true);
+    const newValue = !isEmailEnabled;
+
+    try {
+      const res = await fetch("/api/user/settings/email-notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          emailNotification: newValue,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Ошибка при обновлении настроек");
+
+      // Оптимистично обновляем UI
+      setIsEmailEnabled(newValue);
+
+      // Вызываем refresh, чтобы Next.js обновил серверные данные в фоне
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update email notifications", error);
+    } finally {
+      setIsEmailLoading(false);
     }
   };
 
@@ -41,7 +76,7 @@ export function SettingsClient({ user }: SettingsClientProps) {
       {/* Header */}
       <header className="sticky top-0 z-50 glass px-4 py-3 flex items-center gap-4 border-b border-border/40">
         <Link
-          href="/forecast" // Или "/"
+          href="/forecast"
           className="w-10 h-10 -ml-2 rounded-xl flex items-center justify-center hover:bg-muted/50 transition-colors active:scale-95"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -70,14 +105,58 @@ export function SettingsClient({ user }: SettingsClientProps) {
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider ml-3">
             Уведомления
           </h3>
-          <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm">
+          <div className="rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm flex flex-col divide-y divide-border/50">
+            {/* Блок Push */}
             <div className="p-4">
-              {/* Передаем ID пользователя */}
               <PushManager userId={user.id} />
             </div>
 
-            <div className="px-4 py-3 bg-muted/30 border-t border-border/50 text-[11px] text-muted-foreground leading-snug">
-              Включите, чтобы получать персональный гороскоп каждое утро.
+            {/* Блок Email */}
+            <div className="p-4 flex items-center justify-between gap-3 w-full">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div
+                  className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
+                    isEmailEnabled
+                      ? "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">Email рассылка</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {isEmailEnabled ? "Активно" : "Выключено"}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={toggleEmailNotifications}
+                disabled={isEmailLoading}
+                className={cn(
+                  "h-9 px-4 rounded-xl text-sm font-medium transition-all active:scale-95 whitespace-nowrap shadow-sm",
+                  isEmailLoading && "opacity-70 cursor-wait",
+                  isEmailEnabled
+                    ? "bg-muted text-foreground hover:bg-muted/80 border border-border/50"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90 glow",
+                )}
+              >
+                {isEmailLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isEmailEnabled ? (
+                  "Выкл"
+                ) : (
+                  "Вкл"
+                )}
+              </button>
+            </div>
+
+            {/* Футер карточки уведомлений */}
+            <div className="px-4 py-3 bg-muted/30 text-[11px] text-muted-foreground leading-snug">
+              Настройте удобные каналы, чтобы получать персональный гороскоп
+              каждое утро.
             </div>
           </div>
         </div>

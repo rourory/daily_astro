@@ -100,6 +100,10 @@ services:
       - nextjs-app
       - pgadmin
       - netnext
+    labels:
+      ofelia.enabled: "true"
+      ofelia.job-exec.nginx-reload.schedule: "@weekly"
+      ofelia.job-exec.nginx-reload.command: "nginx -s reload"
 
   certbot:
     image: certbot/certbot
@@ -113,32 +117,27 @@ services:
     restart: unless-stopped
 
   scheduler:
-    image: mcuadros/ofelia:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ofelia
     container_name: scheduler
     depends_on:
       - nextjs-app
     networks:
       - application
-    # ДОБАВЛЕНО: флаг --docker говорит Ofelia искать настройки в лейблах
     command: daemon --docker
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
-      # Позволяем Ofelia читать лейблы этого контейнера
       ofelia.enabled: "true"
 
-      # Перезагрузка nginx для подхвата новых ssl сертификатов
-      ofelia.job-exec.nginx-reload.schedule: "@weekly"
-      ofelia.job-exec.nginx-reload.command: "nginx -s reload"
-
-      # Продление подписок (3:00 UTC)
+      # Продление подписок (3:00 UTC) - job-local выполнится внутри scheduler (где теперь есть curl)
       ofelia.job-local.sub-cron.schedule: "0 0 3 * * *"
       ofelia.job-local.sub-cron.command: "curl -X GET -H 'Authorization: Bearer ${CRON_SECRET}' http://nextjs-app:3000/api/subscribe/cron"
 
       # Прогнозы (каждый час с 4 до 18 UTC)
       ofelia.job-local.forecast-cron.schedule: "0 0 4-18 * * *"
       ofelia.job-local.forecast-cron.command: "curl -X GET -H 'Authorization: Bearer ${CRON_SECRET}' http://nextjs-app:3000/api/forecasts/cron"
-
 volumes:
   postgres_data:
   pgadmin-data:

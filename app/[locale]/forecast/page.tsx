@@ -11,7 +11,6 @@ import {
   Heart, Wallet, Smile, Lightbulb, 
   Lock, Sparkles, Crown, ArrowRight, Star
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // Иконки для блоков
 const ICONS = {
