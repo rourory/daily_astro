@@ -16,13 +16,13 @@ self.addEventListener("push", (event) => {
 
     const title = data.title || "Daily Astro";
     const body = data.body || "Ваш прогноз готов";
-    const icon = "/icons/icon-192.png"; // Убедитесь, что путь верный (из public)
+    const icon = "/icon-192.png"; // Убедитесь, что путь верный (из public)
     const url = data.url || "/forecast";
 
     const options: NotificationOptions = {
       body,
       icon,
-      badge: "/icons/icon-72.png", // Иконка для статус-бара Android (белая с прозрачностью)
+      badge: "/icon-72.png", // Иконка для статус-бара Android (белая с прозрачностью)
       data: { url }, // Сохраняем URL, чтобы открыть его по клику
       //@ts-ignore
       vibrate: [100, 200, 100, 1000, 100, 200, 100],
